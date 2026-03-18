@@ -1,66 +1,123 @@
-# Proposal Generator — Phase 1 (Refactored)
+# Proposal Generator
 
-AI-powered proposal generator for freelance developers. Single page, no routing, no complexity.
+> Generate client-ready dev proposals in seconds.
+
+---
+
+## The Problem
+
+Freelance developers lose deals not because of skill — but because of how they present.
+
+Writing a proposal takes 1–3 hours. Most are vague, mispriced, or never sent.
+Clients read generic output and pass. The work goes to someone who looked more prepared.
+
+This tool takes a raw client requirement and returns a structured, priced,
+consultant-grade proposal — ready to send without editing.
+
+---
+
+## Demo
+
+https://github.com/user-attachments/assets/demo.mp4
+
+> Paste requirement → Generate → 10 structured sections appear → Copy and send.
+
+
+---
+
+## Live
+
+🔗 **[proposal-generator-blond.vercel.app](https://proposal-generator-blond.vercel.app/)**
+
+---
+
+## What it generates
+
+| Section | What it does |
+|---|---|
+| Project Overview | Reframes the requirement around client outcome |
+| Feasibility Note | Flags scope/budget conflicts with structured alternatives |
+| Scope of Work | Phase 1 core + Phase 2 optional, with budget guidance |
+| Deliverables | Exact outputs — no vague line items |
+| Timeline | Phased with buffers and dependency flags |
+| Pricing Estimate | Range with module breakdown and rationale |
+| Tech Stack | Justified against this project, not generic defaults |
+| Scope Boundaries | What is not included |
+| Risk Signals | 1–3 real risks, framed as awareness |
+| Assumptions | Only what materially affects cost or timeline |
+| Next Steps | Clear CTA with milestone delivery line |
+
+---
 
 ## Stack
+
 - Next.js 14 (App Router)
 - TypeScript
-- Tailwind CSS + CSS Variables (glassmorphism)
-- Anthropic Claude API
+- Tailwind CSS
+- Groq API — `llama-3.3-70b-versatile`
+
+---
 
 ## Setup
 
 ```bash
+git clone https://github.com/your-username/proposal-generator
 cd proposal-generator
 npm install
 ```
 
-Add your Anthropic API key to `.env.local`:
+Create `.env.local`:
+
 ```
-ANTHROPIC_API_KEY=your_key_here
+GROQ_API_KEY=gsk_...
 ```
 
 Run:
+
 ```bash
 npm run dev
 ```
 
-Open: http://localhost:3000
+Open: [http://localhost:3000](http://localhost:3000)
 
-## Structure
+Get your Groq key: [console.groq.com](https://console.groq.com)
 
-```
-app/
-  page.tsx              ← Single page: Input + Output + Actions
-  layout.tsx            ← Root layout + global CSS
-  globals.css           ← Glass variables, base styles
-  api/generate/route.ts ← POST /api/generate
-components/
-  VersionBadge.tsx      ← Floating glass version pill
-lib/
-  prompt.ts             ← Claude system prompt
-```
+---
 
 ## API
 
 ```
 POST /api/generate
-Body: { requirement: string }
+Body:    { requirement: string }
 Returns: { proposal: string }
 ```
 
-## Phase 1 — Done
-- [x] Input textarea
-- [x] AI proposal generation
-- [x] 8-section structured output (plain text)
-- [x] Loading state + spinner
-- [x] Error handling
-- [x] Copy to clipboard
-- [x] Regenerate button
-- [x] Floating glass version badge
+---
 
-## Phase 2 — Next
-- [ ] Auth (Clerk or Supabase)
+## Project Structure
+
+```
+app/
+  page.tsx                 ← Landing + tool (single page)
+  layout.tsx               ← Root layout
+  globals.css              ← Glass variables, base styles
+  api/generate/route.ts    ← POST /api/generate
+components/
+  VersionBadge.tsx         ← Floating glass version pill
+lib/
+  prompt.ts                ← System prompt (the core intelligence)
+```
+
+---
+
+## Roadmap
+
+- [x] Core proposal generation
+- [x] Feasibility spectrum (Green / Amber / Orange / Red)
+- [x] Pricing with rationale and cost drivers
+- [x] Risk signals and scope boundaries
+- [x] Landing page
+- [ ] Auth (Clerk)
 - [ ] 3 free proposals limit
 - [ ] Stripe paywall ($9/month)
-- [ ] Landing page
+- [ ] PDF export
