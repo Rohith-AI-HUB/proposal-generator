@@ -1,0 +1,32 @@
+{
+  "name": "proposal-generator",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "16.1.7",
+    "react": "^18",
+    "react-dom": "^18",
+    "groq-sdk": "^0.3.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "tailwindcss": "^3.4.1",
+    "postcss": "^8",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^9",
+    "eslint-plugin-react": "^7",
+    "eslint-plugin-react-hooks": "^7",
+    "globals": "^16",
+    "typescript-eslint": "^8"
+  }
+}
