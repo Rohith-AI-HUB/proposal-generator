@@ -18,7 +18,7 @@ consultant-grade proposal — ready to send without editing.
 
 ## Demo
 
-![Proposal Generator Demo](./docs/demo-ezgif.com-crop.gif)
+![Proposal Generator Demo](./docs/demo.gif)
 
 > Paste requirement → Generate → 10 structured sections appear → Copy and send.
 
