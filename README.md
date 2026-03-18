@@ -18,10 +18,9 @@ consultant-grade proposal — ready to send without editing.
 
 ## Demo
 
-https://github.com/user-attachments/assets/demo.mp4
+<video src="docs/demo.mp4" controls muted loop playsinline width="100%" style="max-width:640px;border-radius:8px;"></video>
 
 > Paste requirement → Generate → 10 structured sections appear → Copy and send.
-
 
 ---
 
