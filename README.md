@@ -18,7 +18,7 @@ consultant-grade proposal — ready to send without editing.
 
 ## Demo
 
-![Demo Video](./docs/demo.mp4)
+<video src="./docs/demo.mp4" controls="controls" style="max-width: 100%;"></video>
 
 > Paste requirement → Generate → 10 structured sections appear → Copy and send.
 
