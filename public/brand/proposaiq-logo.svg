@@ -1,0 +1,25 @@
+<svg width="920" height="260" viewBox="0 0 920 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="18" y1="14" x2="110" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1e1b4b"/>
+      <stop offset="0.55" stop-color="#3730a3"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(96 32) rotate(136.169) scale(54.8764)">
+      <stop stop-color="#22d3ee" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#glow)"/>
+  <rect x="10" y="10" width="108" height="108" rx="28" stroke="rgba(255,255,255,0.12)"/>
+  <rect x="32" y="31" width="47" height="57" rx="14" fill="rgba(226,232,240,0.08)" stroke="rgba(226,232,240,0.18)"/>
+  <rect x="42" y="36" width="50" height="62" rx="16" fill="#f8fafc"/>
+  <path d="M78 36 L92 50 H81C79.067 50 78 48.433 78 46V36Z" fill="#c7d2fe"/>
+  <line x1="52" y1="56" x2="77" y2="56" stroke="#4338ca" stroke-width="5" stroke-linecap="round"/>
+  <line x1="52" y1="68" x2="70" y2="68" stroke="#6366f1" stroke-width="5" stroke-linecap="round"/>
+  <path d="M52 82 L62 72 L69 79 L82 64" stroke="#06b6d4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="82" cy="64" r="4" fill="#06b6d4"/>
+  <text x="152" y="68" fill="#0f172a" font-family="Space Grotesk, Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" letter-spacing="-0.04em">Proposa<tspan fill="#4338ca">IQ</tspan></text>
+  <text x="154" y="106" fill="#475569" font-family="Space Grotesk, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="0.28em">AI PROPOSAL GENERATOR</text>
+</svg>

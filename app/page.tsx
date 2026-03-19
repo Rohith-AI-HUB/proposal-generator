@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Logo from "@/components/Logo";
 import VersionBadge from "@/components/VersionBadge";
 
 const SECTIONS = [
@@ -132,6 +133,9 @@ export default function HomePage() {
         }} />
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: "680px" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
+            <Logo size="lg" showTagline />
+          </div>
 
           {/* Pill badge */}
           <div style={{
