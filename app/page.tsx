@@ -11,6 +11,7 @@ import type {
 } from "@/lib/domain/proposal/schema";
 import { MAX_REQUIREMENT_LENGTH } from "@/lib/domain/proposal/constants";
 import { computeWarnings, type InputWarning } from "@/lib/domain/proposal/warnings";
+import { VersionPanel } from "@/components/VersionPanel";
 
 export default function HomePage() {
   const [requirement, setRequirement] = useState("");
@@ -20,6 +21,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [warnings, setWarnings] = useState<InputWarning[]>([]);
+  const [showVersion, setShowVersion] = useState(false);
   const toolRef = useRef<HTMLDivElement>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -77,12 +79,22 @@ export default function HomePage() {
 
   return (
     <main>
+      {showVersion && (
+        <VersionPanel onClose={() => setShowVersion(false)} />
+      )}
+
       {/* ── HEADER ── */}
       <header className="page-header">
         <Logo size="sm" />
         <div className="header-right">
           <ThemeToggle />
-          <span className="header-meta">v1.4.0 — BETA</span>
+          <button
+            className="version-btn"
+            onClick={() => setShowVersion(true)}
+            aria-label="View version info and changelog"
+          >
+            v1.4.0 — BETA
+          </button>
         </div>
       </header>
 
