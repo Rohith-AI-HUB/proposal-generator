@@ -1,57 +1,36 @@
-// Structural shape validation. Does not do semantic checks — that's the normalizer.
-// Returns a type predicate so callers get the typed Proposal on success.
+// Validates and normalizes raw model output via the Zod ProposalSchema.
+//
+// Returns a discriminated union:
+//   { success: true,  data: Proposal }          -- valid, already normalized
+//   { success: false, reason: string }           -- failure reason for repair prompt
+//
+// All semantic rules (non-empty scope.core, >= 2 pricing modules, rationale length,
+// feasibilityNote required for orange/red, totalMax >= totalMin, totalDays derived
+// from phases, blank string filtering) are enforced inside ProposalSchema.
+// Nothing is duplicated here.
 
+import { ProposalSchema } from "@/lib/domain/proposal/proposalSchema";
 import type { Proposal } from "@/lib/domain/proposal/schema";
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === "object" && !Array.isArray(v);
-}
+export type ValidateResult =
+  | { success: true; data: Proposal }
+  | { success: false; reason: string };
 
-function isStringArray(v: unknown): boolean {
-  return Array.isArray(v) && v.every((i) => typeof i === "string");
-}
+export function validateProposal(raw: unknown): ValidateResult {
+  const result = ProposalSchema.safeParse(raw);
 
-export function validateProposal(p: unknown): p is Proposal {
-  if (!isRecord(p)) return false;
+  if (result.success) {
+    // Cast is safe: ParsedProposal output type is structurally identical to Proposal.
+    return { success: true, data: result.data as unknown as Proposal };
+  }
 
-  // overview
-  if (!isRecord(p.overview)) return false;
-  const ov = p.overview;
-  if (typeof ov.summary !== "string") return false;
-  if (typeof ov.outcome !== "string") return false;
-  if (!["green", "amber", "orange", "red"].includes(ov.feasibility as string)) return false;
+  const reason = result.error.errors
+    .map((e) => {
+      const path = e.path.length > 0 ? `${e.path.join(".")}: ` : "";
+      return `${path}${e.message}`;
+    })
+    .join("; ");
 
-  // scope
-  if (!isRecord(p.scope)) return false;
-  if (!Array.isArray((p.scope as Record<string, unknown>).core)) return false;
-  if (!Array.isArray((p.scope as Record<string, unknown>).extended)) return false;
-
-  // deliverables
-  if (!Array.isArray(p.deliverables)) return false;
-
-  // timeline
-  if (!isRecord(p.timeline)) return false;
-  const tl = p.timeline;
-  if (!Array.isArray(tl.phases)) return false;
-  if (typeof tl.totalDays !== "number") return false;
-  if (!Array.isArray(tl.dependencies)) return false;
-
-  // pricing
-  if (!isRecord(p.pricing)) return false;
-  const pr = p.pricing;
-  if (typeof pr.totalMin !== "number") return false;
-  if (typeof pr.totalMax !== "number") return false;
-  if (!Array.isArray(pr.modules)) return false;
-  if (typeof pr.rationale !== "string") return false;
-  if (typeof pr.valueJustification !== "string") return false;
-  if (typeof pr.variabilityNote !== "string") return false;
-
-  // arrays
-  if (!Array.isArray(p.techStack)) return false;
-  if (!isStringArray(p.boundaries)) return false;
-  if (!Array.isArray(p.risks)) return false;
-  if (!Array.isArray(p.assumptions)) return false;
-  if (!Array.isArray(p.nextSteps)) return false;
-
-  return true;
+  console.warn("[validateProposal] rejected:", reason);
+  return { success: false, reason };
 }

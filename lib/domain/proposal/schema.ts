@@ -69,11 +69,14 @@ export interface GenerateResponse {
 }
 
 export type ErrorCode =
+  | "INVALID_BODY"
   | "INPUT_TOO_SHORT"
   | "INPUT_TOO_LONG"
+  | "RATE_LIMITED"
   | "MODEL_ERROR"
   | "PARSE_ERROR"
   | "VALIDATION_ERROR"
+  | "REPAIR_FAILED"
   | "CONFIG_ERROR";
 
 export interface GenerateErrorResponse {

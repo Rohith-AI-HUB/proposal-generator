@@ -2,9 +2,16 @@
 
 import { SectionCard, BulletList } from "./shared";
 
-export function BoundariesSection({ boundaries }: { boundaries: string[] }) {
+export function BoundariesSection({
+  boundaries,
+  id,
+}: {
+  boundaries: string[];
+  id?: string;
+}) {
+  if (!boundaries.length) return null;
   return (
-    <SectionCard title="Scope Boundaries">
+    <SectionCard title="Scope Boundaries" id={id}>
       <BulletList items={boundaries} />
     </SectionCard>
   );

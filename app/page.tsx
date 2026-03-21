@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Logo from "@/components/Logo";
-import VersionBadge from "@/components/VersionBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProposalView } from "@/components/proposal/ProposalView";
 import type {
   Proposal,
   GenerateResponse,
   GenerateErrorResponse,
 } from "@/lib/domain/proposal/schema";
+import { MAX_REQUIREMENT_LENGTH } from "@/lib/domain/proposal/constants";
+import { computeWarnings, type InputWarning } from "@/lib/domain/proposal/warnings";
 
 export default function HomePage() {
   const [requirement, setRequirement] = useState("");
@@ -17,7 +19,21 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [warnings, setWarnings] = useState<InputWarning[]>([]);
+  const toolRef = useRef<HTMLDivElement>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced warning computation — runs 600ms after the user stops typing.
+  // Avoids computing on every keystroke and avoids showing warnings mid-sentence.
+  useEffect(() => {
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    warningTimerRef.current = setTimeout(() => {
+      setWarnings(computeWarnings(requirement));
+    }, 600);
+    return () => {
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    };
+  }, [requirement]);
 
   async function generate(req: string) {
     setLoading(true);
@@ -52,215 +68,119 @@ export default function HomePage() {
     });
   }
 
-  function scrollToInput() {
-    inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    inputRef.current?.focus();
+  function scrollToTool() {
+    toolRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  const charCount = requirement.length;
+  const overLimit = charCount > MAX_REQUIREMENT_LENGTH;
+
   return (
-    <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <main>
+      {/* ── HEADER ── */}
+      <header className="page-header">
+        <Logo size="sm" />
+        <div className="header-right">
+          <ThemeToggle />
+          <span className="header-meta">v1.4.0 — BETA</span>
+        </div>
+      </header>
 
-      {/* ── LANDING SECTION ── */}
-      <section style={{
-        width: "100%", minHeight: "92vh",
-        display: "flex", flexDirection: "column",
-        justifyContent: "center", alignItems: "center",
-        padding: "80px 24px 60px",
-        position: "relative", overflow: "hidden",
-      }}>
-        {/* Grid texture */}
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          backgroundImage: `
-            linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)
-          `,
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
-        }} />
-        {/* Glow orb */}
-        <div style={{
-          position: "absolute", top: "30%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "600px", height: "400px",
-          background: "radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%)",
-          zIndex: 0, pointerEvents: "none",
-        }} />
-
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: "680px" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
-            <Logo size="lg" showTagline />
-          </div>
-
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            padding: "5px 14px", borderRadius: "999px", marginBottom: "32px",
-            background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)",
-          }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#6366f1", display: "inline-block" }} />
-            <span style={{ fontSize: "11px", fontWeight: 700, color: "#6366f1", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              For freelance developers
-            </span>
-          </div>
-
-          <h1 style={{
-            fontSize: "clamp(32px, 6vw, 58px)", fontWeight: 800, color: "#f1f5f9",
-            lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: "20px",
-          }}>
-            Generate client-ready
-            <br />
-            <span style={{
-              background: "linear-gradient(135deg, #818cf8, #6366f1)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-            }}>
-              dev proposals in seconds
-            </span>
+      {/* ── HERO ── */}
+      <section className="hero">
+        <div>
+          <h1 className="hero-headline">
+            Turn messy client notes<br />
+            into <em>proposals that close.</em>
           </h1>
-
-          <p style={{
-            fontSize: "clamp(15px, 2vw, 17px)", color: "#64748b",
-            lineHeight: 1.7, maxWidth: "480px", margin: "0 auto 40px",
-          }}>
-            Not generic AI output — structured, priced, and ready to send.
-          </p>
-
-          <button
-            onClick={scrollToInput}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              background: "#6366f1", color: "#fff", border: "none",
-              borderRadius: "10px", padding: "14px 28px",
-              fontWeight: 700, fontSize: "15px", cursor: "pointer",
-              boxShadow: "0 0 0 1px rgba(99,102,241,0.5), 0 8px 24px rgba(99,102,241,0.25)",
-            }}
-          >
-            Try with your client requirement
-            <span style={{ fontSize: "16px" }}>↓</span>
+          <button className="hero-scroll" onClick={scrollToTool}>
+            <span className="hero-scroll-line" />
+            Start generating
           </button>
-
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: "24px", marginTop: "52px", flexWrap: "wrap",
-          }}>
-            {["11 sections auto-generated", "Pricing with rationale", "Scope boundaries included"].map((item) => (
-              <div key={item} style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                <span style={{ color: "#6366f1", fontSize: "13px" }}>✓</span>
-                <span style={{ color: "#475569", fontSize: "12.5px" }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ position: "absolute", bottom: "28px", left: "50%", transform: "translateX(-50%)", opacity: 0.3 }}>
-          <div style={{ width: "1px", height: "32px", background: "linear-gradient(to bottom, transparent, #94a3b8)" }} />
         </div>
       </section>
 
-      {/* ── TOOL SECTION ── */}
-      <section style={{
-        width: "100%", padding: "0 16px 120px",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: "40px",
-      }}>
+      {/* ── TOOL ROOT ── */}
+      <div className="tool-root" ref={toolRef}>
 
-        {/* Input card */}
-        <div className="glass" style={{
-          width: "100%", maxWidth: "680px", borderRadius: "16px",
-          padding: "24px", display: "flex", flexDirection: "column", gap: "16px",
-        }}>
-          <label style={{
-            fontSize: "11px", fontWeight: 700, color: "#64748b",
-            letterSpacing: "0.08em", textTransform: "uppercase",
-          }}>
-            Client Requirement
-          </label>
-          <textarea
-            ref={inputRef}
-            value={requirement}
-            onChange={(e) => setRequirement(e.target.value)}
-            placeholder="Paste client requirement…"
-            rows={8}
-            style={{
-              width: "100%", background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px",
-              color: "#f1f5f9", fontSize: "14px", lineHeight: 1.7,
-              padding: "14px", resize: "vertical", outline: "none",
-              fontFamily: "inherit", transition: "border-color 0.2s",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "rgba(99,102,241,0.45)")}
-            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
-          />
-          {error && (
-            <p style={{
-              color: "#f87171", fontSize: "13px",
-              padding: "10px 14px", borderRadius: "8px",
-              background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)",
-            }}>
-              {error}
-            </p>
-          )}
-          <button
-            onClick={() => generate(requirement)}
-            disabled={loading || !requirement.trim()}
-            style={{
-              alignSelf: "flex-end",
-              background: loading ? "rgba(99,102,241,0.35)" : "#6366f1",
-              color: "#fff", border: "none", borderRadius: "9px",
-              padding: "11px 24px", fontWeight: 700, fontSize: "14px",
-              cursor: loading || !requirement.trim() ? "not-allowed" : "pointer",
-              letterSpacing: "0.02em", transition: "background 0.15s",
-            }}
-          >
-            {loading ? "Generating…" : "Generate Proposal"}
-          </button>
-        </div>
+        {/* LEFT — Input panel */}
+        <aside className="input-panel">
+          <div>
+            <label className="input-label" htmlFor="requirement">
+              Client requirement
+            </label>
+            <textarea
+              id="requirement"
+              className="req-textarea"
+              value={requirement}
+              onChange={(e) => setRequirement(e.target.value)}
+              placeholder={"Describe what the client asked for.\nPaste an email, a Notion doc, a Slack message — anything."}
+              rows={14}
+            />
+            {error && <p className="error-msg">{error}</p>}
 
-        {/* Loading state */}
-        {loading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-            <div style={{
-              width: "32px", height: "32px", borderRadius: "50%",
-              border: "2.5px solid rgba(99,102,241,0.2)", borderTopColor: "#6366f1",
-              animation: "spin 0.8s linear infinite",
-            }} />
-            <p style={{ color: "#64748b", fontSize: "13px" }}>Building your proposal…</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            {/* ── WARNINGS ── shown after user has typed enough */}
+            {warnings.length > 0 && !loading && (
+              <ul className="warnings-list" aria-label="Input quality signals">
+                {warnings.map((w) => (
+                  <li key={w.id} className={`warning-badge warning-badge--${w.severity}`}>
+                    <span className="warning-icon" aria-hidden="true">
+                      {w.severity === "conflict" ? "!" : w.severity === "caution" ? "△" : "i"}
+                    </span>
+                    <span>
+                      <span className="warning-label">{w.label}</span>
+                      <span className="warning-detail">{w.detail}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
 
-        {/* Proposal output — rendered from structured data */}
-        {proposal && <ProposalView proposal={proposal} />}
-
-        {/* Action buttons */}
-        {proposal && (
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+          <div className="input-footer">
+            <span className="char-count">
+              {charCount.toLocaleString()} / {MAX_REQUIREMENT_LENGTH.toLocaleString()}
+            </span>
             <button
-              onClick={handleCopy}
-              style={{
-                background: "rgba(99,102,241,0.12)", color: "#6366f1",
-                border: "1px solid rgba(99,102,241,0.3)", borderRadius: "9px",
-                padding: "10px 22px", fontWeight: 700, fontSize: "13px", cursor: "pointer",
-              }}
-            >
-              {copied ? "Copied!" : "Copy Proposal"}
-            </button>
-            <button
+              className="generate-btn"
               onClick={() => generate(requirement)}
-              disabled={loading}
-              style={{
-                background: "rgba(255,255,255,0.05)", color: "#94a3b8",
-                border: "1px solid rgba(255,255,255,0.1)", borderRadius: "9px",
-                padding: "10px 22px", fontWeight: 700, fontSize: "13px",
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
+              disabled={loading || !requirement.trim() || overLimit}
             >
-              Regenerate
+              {loading ? "Generating…" : "Generate proposal"}
             </button>
           </div>
-        )}
-      </section>
 
-      <VersionBadge />
+          {loading && (
+            <div className="status-line">
+              <span className="status-dot" />
+              Building proposal — this takes 10–20 seconds
+            </div>
+          )}
+        </aside>
+
+        {/* RIGHT — Output panel */}
+        <div className="output-panel">
+          {proposal ? (
+            <ProposalView
+              proposal={proposal}
+              loading={loading}
+              onRegenerate={() => generate(requirement)}
+              onCopy={handleCopy}
+              copied={copied}
+            />
+          ) : (
+            <div className="empty-state">
+              <p className="empty-label">Output</p>
+              <p className="empty-hint">
+                {loading
+                  ? "Generating your proposal…"
+                  : "Your proposal will appear here."}
+              </p>
+            </div>
+          )}
+        </div>
+
+      </div>
     </main>
   );
 }

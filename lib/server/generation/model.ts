@@ -5,8 +5,9 @@ import Groq from "groq-sdk";
 import { MODEL_CONFIG } from "@/lib/domain/proposal/constants";
 
 export interface ModelResponse {
-  text: string;
-  inputTokens?: number;
+  text:          string;
+  latencyMs:     number;
+  inputTokens?:  number;
   outputTokens?: number;
 }
 
@@ -23,6 +24,7 @@ export async function callModel(
   systemPrompt: string,
   userMessage: string
 ): Promise<ModelResponse> {
+  const start = Date.now();
   const completion = await getClient().chat.completions.create({
     model: MODEL_CONFIG.model,
     max_tokens: MODEL_CONFIG.maxTokens,
@@ -44,7 +46,8 @@ export async function callModel(
 
   return {
     text,
-    inputTokens: completion.usage?.prompt_tokens,
+    latencyMs:    Date.now() - start,
+    inputTokens:  completion.usage?.prompt_tokens,
     outputTokens: completion.usage?.completion_tokens,
   };
 }

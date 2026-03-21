@@ -3,27 +3,23 @@
 import { SectionCard } from "./shared";
 import type { TechChoice } from "@/lib/domain/proposal/schema";
 
-export function TechStackSection({ techStack }: { techStack: TechChoice[] }) {
+export function TechStackSection({
+  techStack,
+  id,
+}: {
+  techStack: TechChoice[];
+  id?: string;
+}) {
+  if (!techStack.length) return null;
   return (
-    <SectionCard title="Tech Stack">
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <SectionCard title="Tech Stack" id={id}>
+      <div className="tech-rows">
         {techStack.map((t, i) => (
-          <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-            <span style={{
-              color: "#64748b",
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              minWidth: "80px",
-              flexShrink: 0,
-              paddingTop: "2px",
-            }}>
-              {t.layer}
-            </span>
+          <div key={i} className="tech-row">
+            <span className="tech-layer">{t.layer}</span>
             <span>
-              <span style={{ fontWeight: 600, color: "#f1f5f9" }}>{t.choice}</span>
-              <span style={{ color: "#64748b" }}> — {t.reason}</span>
+              <span className="tech-choice-name">{t.choice}</span>
+              <span className="tech-reason"> — {t.reason}</span>
             </span>
           </div>
         ))}

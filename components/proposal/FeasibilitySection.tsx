@@ -2,14 +2,25 @@
 
 import { SectionCard } from "./shared";
 import { FEASIBILITY_CONFIG } from "@/lib/domain/proposal/constants";
-import type { ProposalOverview, FeasibilityLevel } from "@/lib/domain/proposal/schema";
+import type { ProposalOverview } from "@/lib/domain/proposal/schema";
 
-export function FeasibilitySection({ overview, id }: { overview: ProposalOverview; id?: string }) {
+export function FeasibilitySection({
+  overview,
+  id,
+}: {
+  overview: ProposalOverview;
+  id?: string;
+}) {
   if (overview.feasibility === "green" || !overview.feasibilityNote) return null;
-  const color = FEASIBILITY_CONFIG[overview.feasibility as FeasibilityLevel].color;
+  const cfg = FEASIBILITY_CONFIG[overview.feasibility];
   return (
     <SectionCard title="Feasibility Note" id={id}>
-      <p style={{ color, fontSize: "13.5px", lineHeight: 1.75 }}>{overview.feasibilityNote}</p>
+      <p
+        className="feasibility-note-text"
+        style={{ color: cfg.color }}
+      >
+        {overview.feasibilityNote}
+      </p>
     </SectionCard>
   );
 }

@@ -3,32 +3,34 @@
 import { SectionCard, BulletList, SubHeading } from "./shared";
 import type { ProposalTimeline } from "@/lib/domain/proposal/schema";
 
-export function TimelineSection({ timeline }: { timeline: ProposalTimeline }) {
+export function TimelineSection({
+  timeline,
+  id,
+}: {
+  timeline: ProposalTimeline;
+  id?: string;
+}) {
   return (
-    <SectionCard title="Timeline">
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+    <SectionCard title="Timeline" id={id}>
+      <div className="timeline-rows">
         {timeline.phases.map((ph, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-            <span>
+          <div key={i} className="timeline-row">
+            <span className="timeline-row-name">
               {ph.name}
               {ph.notes && (
-                <span style={{ color: "#64748b", fontSize: "12.5px" }}> — {ph.notes}</span>
+                <span className="timeline-note"> — {ph.notes}</span>
               )}
             </span>
-            <span style={{ flexShrink: 0, fontWeight: 700, color: "#f1f5f9" }}>{ph.days}d</span>
+            <span className="timeline-days">{ph.days}d</span>
           </div>
         ))}
-        <div style={{
-          marginTop: "8px", paddingTop: "10px",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
-          display: "flex", justifyContent: "space-between", fontWeight: 700,
-        }}>
+        <div className="timeline-total">
           <span>Total</span>
-          <span style={{ color: "#6366f1" }}>{timeline.totalDays} days</span>
+          <span className="timeline-total-val">{timeline.totalDays} days</span>
         </div>
       </div>
       {timeline.dependencies.length > 0 && (
-        <div style={{ marginTop: "14px" }}>
+        <div className="timeline-deps">
           <SubHeading>Dependencies</SubHeading>
           <BulletList items={timeline.dependencies} />
         </div>

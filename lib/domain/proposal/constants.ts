@@ -51,13 +51,23 @@ export const FEASIBILITY_CONFIG = {
   red:    { label: "Red",    color: "#ef4444" },
 } as const;
 
-// ─── Error messages ───────────────────────────────────────────────────────────
+// --- Rate limit config -------------------------------------------------------
+// Mirrors the values in lib/server/ratelimit.ts.
+// Kept here so error messages can reference the window without importing server code.
+export const RATE_LIMIT_CONFIG = {
+  maxRequests:    5,
+  windowMinutes:  15,
+} as const;
+
+// --- Error messages ----------------------------------------------------------
 export const ERROR_MESSAGES = {
-  CONFIG_ERROR:      "Server is missing GROQ_API_KEY.",
-  INPUT_TOO_SHORT:   "Requirement too short. Add more detail.",
-  INPUT_TOO_LONG:    `Requirement too long. Keep it under ${MAX_REQUIREMENT_LENGTH.toLocaleString()} characters.`,
-  MODEL_ERROR:       "Model call failed. Try again.",
-  PARSE_ERROR:       "Model returned malformed JSON. Try regenerating.",
-  VALIDATION_ERROR:  "Model returned an incomplete proposal. Try regenerating.",
-  INVALID_BODY:      "Invalid request body.",
+  CONFIG_ERROR:     "Server is missing GROQ_API_KEY.",
+  INVALID_BODY:     "Invalid request body.",
+  INPUT_TOO_SHORT:  "Requirement too short. Add more detail.",
+  INPUT_TOO_LONG:   `Requirement too long. Keep it under ${MAX_REQUIREMENT_LENGTH.toLocaleString()} characters.`,
+  RATE_LIMITED:     `Too many requests. Try again in ${RATE_LIMIT_CONFIG.windowMinutes} minutes.`,
+  MODEL_ERROR:      "Model call failed. Try again.",
+  PARSE_ERROR:      "Model returned malformed JSON. Try regenerating.",
+  VALIDATION_ERROR: "Model returned an incomplete proposal. Try regenerating.",
+  REPAIR_FAILED:    "Model could not produce a valid proposal after repair. Try regenerating.",
 } as const;

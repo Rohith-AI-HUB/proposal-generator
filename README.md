@@ -1,4 +1,4 @@
-# Proposal Generator
+# ProposaIQ
 
 > Generate client-ready dev proposals in seconds.
 
@@ -6,13 +6,13 @@
 
 ## The Problem
 
-Freelance developers lose deals not because of skill — but because of how they present.
+Freelance developers lose deals not because of skill -- but because of how they present.
 
-Writing a proposal takes 1–3 hours. Most are vague, mispriced, or never sent.
+Writing a proposal takes 1-3 hours. Most are vague, mispriced, or never sent.
 Clients read generic output and pass. The work goes to someone who looked more prepared.
 
 This tool takes a raw client requirement and returns a structured, priced,
-consultant-grade proposal — ready to send without editing.
+consultant-grade proposal -- ready to send without editing.
 
 ---
 
@@ -20,14 +20,13 @@ consultant-grade proposal — ready to send without editing.
 
 ![Proposal Generator Demo](./docs/demo.gif)
 
-> Paste requirement → Generate → 10 structured sections appear → Copy and send.
-
+> Paste requirement -> Generate -> 10 structured sections appear -> Copy and send.
 
 ---
 
 ## Live
 
-🔗 **[proposal-generator-blond.vercel.app](https://proposal-generator-blond.vercel.app/)**
+[proposal-generator-blond.vercel.app](https://proposal-generator-blond.vercel.app/)
 
 ---
 
@@ -38,12 +37,12 @@ consultant-grade proposal — ready to send without editing.
 | Project Overview | Reframes the requirement around client outcome |
 | Feasibility Note | Flags scope/budget conflicts with structured alternatives |
 | Scope of Work | Phase 1 core + Phase 2 optional, with budget guidance |
-| Deliverables | Exact outputs — no vague line items |
+| Deliverables | Exact outputs -- no vague line items |
 | Timeline | Phased with buffers and dependency flags |
 | Pricing Estimate | Range with module breakdown and rationale |
 | Tech Stack | Justified against this project, not generic defaults |
 | Scope Boundaries | What is not included |
-| Risk Signals | 1–3 real risks, framed as awareness |
+| Risk Signals | 1-3 real risks, framed as awareness |
 | Assumptions | Only what materially affects cost or timeline |
 | Next Steps | Clear CTA with milestone delivery line |
 
@@ -51,10 +50,10 @@ consultant-grade proposal — ready to send without editing.
 
 ## Stack
 
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Groq API — `llama-3.3-70b-versatile`
+- Next.js 16 (App Router)
+- TypeScript 5
+- Tailwind CSS 3
+- Groq API -- `llama-3.3-70b-versatile`
 
 ---
 
@@ -89,8 +88,11 @@ Get your Groq key: [console.groq.com](https://console.groq.com)
 ```
 POST /api/generate
 Body:    { requirement: string }
-Returns: { proposal: string }
+Returns: { proposal: Proposal, renderedText: string }
 ```
+
+`proposal` is a typed object with all 11 sections.
+`renderedText` is a plain-text version ready for clipboard copy.
 
 ---
 
@@ -98,14 +100,46 @@ Returns: { proposal: string }
 
 ```
 app/
-  page.tsx                 ← Landing + tool (single page)
-  layout.tsx               ← Root layout
-  globals.css              ← Glass variables, base styles
-  api/generate/route.ts    ← POST /api/generate
+  page.tsx                        <- Landing + tool (single page, client component)
+  layout.tsx                      <- Root layout, font loading, theme anti-flash script
+  globals.css                     <- Design tokens, base styles, component classes
+  api/generate/route.ts           <- POST /api/generate
+
 components/
-  VersionBadge.tsx         ← Floating glass version pill
+  Logo.tsx
+  ThemeToggle.tsx
+  proposal/
+    ProposalView.tsx              <- Section nav + all section renders + action bar
+    OverviewSection.tsx
+    FeasibilitySection.tsx
+    ScopeSection.tsx
+    DeliverablesSection.tsx
+    TimelineSection.tsx
+    PricingSection.tsx
+    TechStackSection.tsx
+    BoundariesSection.tsx
+    RisksSection.tsx
+    AssumptionsSection.tsx
+    NextStepsSection.tsx
+    shared.tsx                    <- SectionCard wrapper used by every section
+
 lib/
-  prompt.ts                ← System prompt (the core intelligence)
+  domain/proposal/
+    schema.ts                     <- All Proposal types (single source of truth)
+    constants.ts                  <- Model config, guardrails, error messages
+    normalizer.ts                 <- Clamps and trims validated model output
+    warnings.ts                   <- Client-side input quality signals (debounced)
+
+  server/generation/
+    index.ts                      <- generateProposal() orchestrator
+    model.ts                      <- Groq SDK adapter
+    prompt.ts                     <- System prompt + user message builder
+    preprocessor.ts               <- Requirement signal extraction (budget, deadline, vagueness)
+    validator.ts                  <- Structural + semantic validation of model output
+
+  server/rendering/
+    index.ts
+    text.ts                       <- Plain-text renderer for clipboard export
 ```
 
 ---
@@ -117,6 +151,7 @@ lib/
 - [x] Pricing with rationale and cost drivers
 - [x] Risk signals and scope boundaries
 - [x] Landing page
+- [x] Input quality warnings (budget/deadline/vagueness detection)
 - [ ] Auth (Clerk)
 - [ ] 3 free proposals limit
 - [ ] Stripe paywall ($9/month)
