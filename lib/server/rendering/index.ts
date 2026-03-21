@@ -1,0 +1,1 @@
+export { renderProposalText } from "./text";

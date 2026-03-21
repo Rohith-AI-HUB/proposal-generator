@@ -1,0 +1,63 @@
+// Every magic value lives here. Nothing is hardcoded in business logic.
+
+// ─── Input constraints ────────────────────────────────────────────────────────
+export const MIN_REQUIREMENT_LENGTH = 10;
+export const MAX_REQUIREMENT_LENGTH = 8_000;
+
+// ─── Model config ─────────────────────────────────────────────────────────────
+export const MODEL_CONFIG = {
+  model: "llama-3.3-70b-versatile",
+  maxTokens: 3000,
+  temperature: 0.3, // Lower = more deterministic JSON structure
+} as const;
+
+// ─── Validation guardrails ────────────────────────────────────────────────────
+// If the model produces values outside these bounds, the normalizer clamps them.
+export const PRICING_GUARDRAILS = {
+  minUSD: 100,
+  maxUSD: 500_000,
+} as const;
+
+export const TIMELINE_GUARDRAILS = {
+  minDaysPerPhase: 1,
+  maxDaysPerPhase: 365,
+  minTotalDays: 1,
+  maxTotalDays: 730,
+} as const;
+
+// ─── Section display order ────────────────────────────────────────────────────
+// Governs the order ProposalView renders sections.
+export const SECTION_ORDER = [
+  "overview",
+  "feasibility",
+  "scope",
+  "deliverables",
+  "timeline",
+  "pricing",
+  "techStack",
+  "boundaries",
+  "risks",
+  "assumptions",
+  "nextSteps",
+] as const;
+
+export type SectionKey = (typeof SECTION_ORDER)[number];
+
+// ─── Feasibility display config ───────────────────────────────────────────────
+export const FEASIBILITY_CONFIG = {
+  green:  { label: "Green",  color: "#22c55e" },
+  amber:  { label: "Amber",  color: "#f59e0b" },
+  orange: { label: "Orange", color: "#f97316" },
+  red:    { label: "Red",    color: "#ef4444" },
+} as const;
+
+// ─── Error messages ───────────────────────────────────────────────────────────
+export const ERROR_MESSAGES = {
+  CONFIG_ERROR:      "Server is missing GROQ_API_KEY.",
+  INPUT_TOO_SHORT:   "Requirement too short. Add more detail.",
+  INPUT_TOO_LONG:    `Requirement too long. Keep it under ${MAX_REQUIREMENT_LENGTH.toLocaleString()} characters.`,
+  MODEL_ERROR:       "Model call failed. Try again.",
+  PARSE_ERROR:       "Model returned malformed JSON. Try regenerating.",
+  VALIDATION_ERROR:  "Model returned an incomplete proposal. Try regenerating.",
+  INVALID_BODY:      "Invalid request body.",
+} as const;

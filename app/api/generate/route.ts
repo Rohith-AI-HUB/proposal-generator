@@ -1,54 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
-import { PROPOSAL_SYSTEM_PROMPT } from "@/lib/prompt";
+import { generateProposal, GenerationError } from "@/lib/server/generation";
+import {
+  MIN_REQUIREMENT_LENGTH,
+  MAX_REQUIREMENT_LENGTH,
+  ERROR_MESSAGES,
+} from "@/lib/domain/proposal/constants";
+import type { GenerateResponse, GenerateErrorResponse } from "@/lib/domain/proposal/schema";
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY! });
-const MAX_REQUIREMENT_LENGTH = 8_000;
+function errorResponse(message: string, code: GenerateErrorResponse["code"], status: number) {
+  const body: GenerateErrorResponse = { error: message, code };
+  return NextResponse.json(body, { status });
+}
 
 export async function POST(req: NextRequest) {
+  if (!process.env.GROQ_API_KEY) {
+    return errorResponse(ERROR_MESSAGES.CONFIG_ERROR, "CONFIG_ERROR", 500);
+  }
+
+  let requirement: string;
   try {
-    if (!process.env.GROQ_API_KEY) {
-      return NextResponse.json(
-        { error: "Server is missing GROQ_API_KEY." },
-        { status: 500 }
-      );
-    }
-
     const body = await req.json();
-    const requirement =
-      typeof body?.requirement === "string" ? body.requirement.trim() : "";
+    requirement = typeof body?.requirement === "string" ? body.requirement.trim() : "";
+  } catch {
+    return errorResponse(ERROR_MESSAGES.INVALID_BODY, "INPUT_TOO_SHORT", 400);
+  }
 
-    if (!requirement || requirement.length < 10) {
-      return NextResponse.json(
-        { error: "Requirement too short. Add more detail." },
-        { status: 400 }
-      );
-    }
+  if (requirement.length < MIN_REQUIREMENT_LENGTH) {
+    return errorResponse(ERROR_MESSAGES.INPUT_TOO_SHORT, "INPUT_TOO_SHORT", 400);
+  }
+  if (requirement.length > MAX_REQUIREMENT_LENGTH) {
+    return errorResponse(ERROR_MESSAGES.INPUT_TOO_LONG, "INPUT_TOO_LONG", 413);
+  }
 
-    if (requirement.length > MAX_REQUIREMENT_LENGTH) {
-      return NextResponse.json(
-        { error: "Requirement is too long. Keep it under 8,000 characters." },
-        { status: 413 }
-      );
-    }
-
-    const completion = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      max_tokens: 2048,
-      messages: [
-        { role: "system", content: PROPOSAL_SYSTEM_PROMPT },
-        { role: "user", content: `Client Requirement:\n\n${requirement}` },
-      ],
-    });
-
-    const text = completion.choices[0]?.message?.content ?? "";
-
-    return NextResponse.json({ proposal: text });
+  try {
+    const { proposal, renderedText } = await generateProposal(requirement);
+    const body: GenerateResponse = { proposal, renderedText };
+    return NextResponse.json(body);
   } catch (err) {
-    console.error("[/api/generate]", err);
-    return NextResponse.json(
-      { error: "API failed. Check your GROQ_API_KEY." },
-      { status: 500 }
-    );
+    if (err instanceof GenerationError) {
+      const status = err.code === "MODEL_ERROR" ? 502 : 502;
+      return errorResponse(err.message, err.code, status);
+    }
+    console.error("[POST /api/generate] unexpected:", err);
+    return errorResponse(ERROR_MESSAGES.MODEL_ERROR, "MODEL_ERROR", 500);
   }
 }
