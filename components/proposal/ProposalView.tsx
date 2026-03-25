@@ -13,6 +13,7 @@ import { BoundariesSection }   from "./BoundariesSection";
 import { RisksSection }        from "./RisksSection";
 import { AssumptionsSection }  from "./AssumptionsSection";
 import { NextStepsSection }    from "./NextStepsSection";
+import { ClientCostsSection }  from "./ClientCostsSection";
 
 // ---------------------------------------------------------------------------
 // Visibility table
@@ -26,6 +27,7 @@ import { NextStepsSection }    from "./NextStepsSection";
 interface VisibilityMap {
   feasibility:  boolean;
   deliverables: boolean;
+  clientCosts:  boolean;
   techStack:    boolean;
   boundaries:   boolean;
   risks:        boolean;
@@ -37,6 +39,7 @@ function computeVisibility(proposal: Proposal): VisibilityMap {
   return {
     feasibility:  proposal.overview.feasibility !== "green" && !!proposal.overview.feasibilityNote,
     deliverables: proposal.deliverables.length > 0,
+    clientCosts:  proposal.clientCosts.length > 0,
     techStack:    proposal.techStack.length > 0,
     boundaries:   proposal.boundaries.length > 0,
     risks:        proposal.risks.length > 0,
@@ -69,6 +72,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "s-deliverables", label: "Deliverables", visKey: "deliverables" },
   { id: "s-timeline",     label: "Timeline",     visKey: "always"       },
   { id: "s-pricing",      label: "Pricing",      visKey: "always"       },
+  { id: "s-client-costs", label: "Client Costs", visKey: "clientCosts"  },
   { id: "s-tech",         label: "Tech Stack",   visKey: "techStack"    },
   { id: "s-boundaries",   label: "Boundaries",   visKey: "boundaries"   },
   { id: "s-risks",        label: "Risks",        visKey: "risks"        },
@@ -154,6 +158,7 @@ export function ProposalView({
         {vis.deliverables && <DeliverablesSection deliverables={proposal.deliverables} id="s-deliverables" />}
         <TimelineSection     timeline={proposal.timeline}         id="s-timeline"     />
         <PricingSection      pricing={proposal.pricing}           id="s-pricing"      />
+        {vis.clientCosts  && <ClientCostsSection clientCosts={proposal.clientCosts}   id="s-client-costs" />}
         {vis.techStack    && <TechStackSection    techStack={proposal.techStack}       id="s-tech"         />}
         {vis.boundaries   && <BoundariesSection   boundaries={proposal.boundaries}     id="s-boundaries"   />}
         {vis.risks        && <RisksSection        risks={proposal.risks}               id="s-risks"        />}

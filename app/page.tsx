@@ -13,20 +13,39 @@ import { MAX_REQUIREMENT_LENGTH } from "@/lib/domain/proposal/constants";
 import { computeWarnings, type InputWarning } from "@/lib/domain/proposal/warnings";
 import { VersionPanel } from "@/components/VersionPanel";
 
+type ClientType = "domestic" | "international";
+
+// Default day rates shown as placeholder when the user hasn't typed yet.
+const DEFAULT_RATES: Record<ClientType, number> = {
+  domestic:      5000,  // ₹5,000/day — mid-market India freelance rate
+  international: 100,   // $100/day   — entry-level international rate
+};
+
+const CURRENCY_LABELS: Record<ClientType, string> = {
+  domestic:      "INR (₹)",
+  international: "USD ($)",
+};
+
+const CURRENCY_SYMBOLS: Record<ClientType, string> = {
+  domestic:      "₹",
+  international: "$",
+};
+
 export default function HomePage() {
-  const [requirement, setRequirement] = useState("");
-  const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [requirement, setRequirement]   = useState("");
+  const [clientType, setClientType]     = useState<ClientType>("international");
+  const [dayRate, setDayRate]           = useState<string>("");
+  const [proposal, setProposal]         = useState<Proposal | null>(null);
   const [renderedText, setRenderedText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [warnings, setWarnings] = useState<InputWarning[]>([]);
-  const [showVersion, setShowVersion] = useState(false);
-  const toolRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState("");
+  const [copied, setCopied]             = useState(false);
+  const [warnings, setWarnings]         = useState<InputWarning[]>([]);
+  const [showVersion, setShowVersion]   = useState(false);
+  const toolRef         = useRef<HTMLDivElement>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced warning computation — runs 600ms after the user stops typing.
-  // Avoids computing on every keystroke and avoids showing warnings mid-sentence.
   useEffect(() => {
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     warningTimerRef.current = setTimeout(() => {
@@ -37,6 +56,19 @@ export default function HomePage() {
     };
   }, [requirement]);
 
+  // When client type changes, clear the day rate so the new placeholder shows.
+  function handleClientTypeChange(type: ClientType) {
+    setClientType(type);
+    setDayRate("");
+  }
+
+  function getEffectiveDayRate(): number {
+    const parsed = parseInt(dayRate, 10);
+    return Number.isFinite(parsed) && parsed > 0
+      ? parsed
+      : DEFAULT_RATES[clientType];
+  }
+
   async function generate(req: string) {
     setLoading(true);
     setError("");
@@ -46,7 +78,11 @@ export default function HomePage() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requirement: req }),
+        body: JSON.stringify({
+          requirement: req,
+          clientType,
+          dayRate: getEffectiveDayRate(),
+        }),
       });
       const data: GenerateResponse | GenerateErrorResponse = await res.json();
       if (!res.ok) {
@@ -76,6 +112,7 @@ export default function HomePage() {
 
   const charCount = requirement.length;
   const overLimit = charCount > MAX_REQUIREMENT_LENGTH;
+  const symbol    = CURRENCY_SYMBOLS[clientType];
 
   return (
     <main>
@@ -93,7 +130,7 @@ export default function HomePage() {
             onClick={() => setShowVersion(true)}
             aria-label="View version info and changelog"
           >
-            v1.4.0 — BETA
+            v1.5.0 — BETA
           </button>
         </div>
       </header>
@@ -147,6 +184,53 @@ export default function HomePage() {
                 ))}
               </ul>
             )}
+
+            {/* ── PRICING CONTEXT ── */}
+            <div className="pricing-context">
+
+              {/* Client type toggle */}
+              <div className="pricing-context-row">
+                <span className="pricing-context-label">Client</span>
+                <div className="client-type-toggle" role="group" aria-label="Client type">
+                  {(["international", "domestic"] as ClientType[]).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`client-type-btn${clientType === type ? " client-type-btn--active" : ""}`}
+                      onClick={() => handleClientTypeChange(type)}
+                      aria-pressed={clientType === type}
+                    >
+                      {type === "domestic" ? "Domestic (India)" : "International"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Day rate input */}
+              <div className="pricing-context-row">
+                <label className="pricing-context-label" htmlFor="dayRate">
+                  Day rate
+                </label>
+                <div className="day-rate-input-wrap">
+                  <span className="day-rate-currency" aria-hidden="true">
+                    {symbol}
+                  </span>
+                  <input
+                    id="dayRate"
+                    className="day-rate-input"
+                    type="number"
+                    min={1}
+                    step={clientType === "domestic" ? 500 : 10}
+                    value={dayRate}
+                    onChange={(e) => setDayRate(e.target.value)}
+                    placeholder={String(DEFAULT_RATES[clientType])}
+                    aria-label={`Day rate in ${CURRENCY_LABELS[clientType]}`}
+                  />
+                  <span className="day-rate-suffix">{CURRENCY_LABELS[clientType]} / day</span>
+                </div>
+              </div>
+
+            </div>
           </div>
 
           <div className="input-footer">

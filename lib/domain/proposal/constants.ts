@@ -12,10 +12,11 @@ export const MODEL_CONFIG = {
 } as const;
 
 // ─── Validation guardrails ────────────────────────────────────────────────────
-// If the model produces values outside these bounds, the normalizer clamps them.
+// Values are currency-neutral integers — they cover both USD and INR ranges.
+// INR projects can reach ₹50,00,000+ for large scopes; max is set accordingly.
 export const PRICING_GUARDRAILS = {
   minUSD: 100,
-  maxUSD: 500_000,
+  maxUSD: 10_000_000, // Covers INR projects up to ~₹1 Cr and USD up to $10M
 } as const;
 
 export const TIMELINE_GUARDRAILS = {

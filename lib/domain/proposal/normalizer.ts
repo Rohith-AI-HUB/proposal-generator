@@ -72,6 +72,15 @@ export function normalizeProposal(p: Proposal): Proposal {
       valueJustification: trimStr(p.pricing.valueJustification),
       variabilityNote: trimStr(p.pricing.variabilityNote),
     },
+    clientCosts: safeArray(p.clientCosts).map((c) => ({
+      item: trimStr((c as { item: unknown }).item),
+      category: trimStr((c as { category: unknown }).category),
+      estimatedCost: trimStr((c as { estimatedCost: unknown }).estimatedCost),
+      mandatory: Boolean((c as { mandatory: unknown }).mandatory),
+      notes: (c as { notes: unknown }).notes
+        ? trimStr((c as { notes: unknown }).notes)
+        : null,
+    })),
     techStack: safeArray(p.techStack).map((t) => ({
       layer: trimStr((t as { layer: unknown }).layer),
       choice: trimStr((t as { choice: unknown }).choice),

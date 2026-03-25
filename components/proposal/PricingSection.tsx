@@ -1,7 +1,8 @@
 "use client";
 
-import { SectionCard } from "./shared";
+import { formatCurrencyAmount } from "@/lib/domain/proposal/currency";
 import type { ProposalPricing } from "@/lib/domain/proposal/schema";
+import { SectionCard } from "./shared";
 
 export function PricingSection({
   pricing,
@@ -10,13 +11,6 @@ export function PricingSection({
   pricing: ProposalPricing;
   id?: string;
 }) {
-  const fmt = (n: number) =>
-    n.toLocaleString("en-US", {
-      style: "currency",
-      currency: pricing.currency,
-      maximumFractionDigits: 0,
-    });
-
   const isRange = pricing.totalMin !== pricing.totalMax;
 
   return (
@@ -24,8 +18,8 @@ export function PricingSection({
       <div className="pricing-total">
         <span className="pricing-amount">
           {isRange
-            ? `${fmt(pricing.totalMin)} – ${fmt(pricing.totalMax)}`
-            : fmt(pricing.totalMin)}
+            ? `${formatCurrencyAmount(pricing.totalMin, pricing.currency)} - ${formatCurrencyAmount(pricing.totalMax, pricing.currency)}`
+            : formatCurrencyAmount(pricing.totalMin, pricing.currency)}
         </span>
         <span className="pricing-currency">{pricing.currency}</span>
       </div>
@@ -35,7 +29,7 @@ export function PricingSection({
           <div key={i} className="pricing-module-row">
             <span>
               <span className="pricing-module-name">{m.module}</span>
-              <span className="pricing-module-rationale"> — {m.rationale}</span>
+              <span className="pricing-module-rationale"> - {m.rationale}</span>
             </span>
             <span className="pricing-module-cost">{m.cost}</span>
           </div>

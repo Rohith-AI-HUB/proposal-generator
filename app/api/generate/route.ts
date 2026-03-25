@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateProposal, GenerationError } from "@/lib/server/generation";
+import type { PricingContext } from "@/lib/server/generation/prompt";
 import { checkRateLimit } from "@/lib/server/ratelimit";
 import { createRequestLog, emitLog } from "@/lib/server/logger";
 import {
@@ -50,6 +51,26 @@ function errorResponse(message: string, code: ErrorCode): NextResponse {
   return NextResponse.json(body, { status: STATUS_MAP[code] ?? 500 });
 }
 
+// Build a PricingContext from raw body fields.
+// Falls back to safe defaults if fields are missing or invalid.
+function parsePricingContext(body: Record<string, unknown>): PricingContext {
+  const clientType: "domestic" | "international" =
+    body.clientType === "domestic" ? "domestic" : "international";
+
+  const currency   = clientType === "domestic" ? "INR" : "USD";
+  const currencySymbol = clientType === "domestic" ? "₹" : "$";
+
+  // Day rate: must be a positive integer. Fallback to sensible market defaults
+  // if missing or invalid so the model always has an anchor.
+  const rawRate = Number(body.dayRate);
+  const fallback = clientType === "domestic" ? 5000 : 100; // ₹5k/day or $100/day
+  const dayRate  = Number.isFinite(rawRate) && rawRate > 0
+    ? Math.round(rawRate)
+    : fallback;
+
+  return { clientType, currency, currencySymbol, dayRate };
+}
+
 // --- Handler -----------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
@@ -79,10 +100,12 @@ export async function POST(req: NextRequest) {
 
   // Parse request body
   let requirement: string;
+  let pricingCtx: PricingContext;
   try {
-    const body = await req.json();
+    const body = await req.json() as Record<string, unknown>;
     requirement =
       typeof body?.requirement === "string" ? body.requirement.trim() : "";
+    pricingCtx = parsePricingContext(body);
   } catch {
     log.status       = 400;
     log.failureClass = "INVALID_BODY";
@@ -109,7 +132,10 @@ export async function POST(req: NextRequest) {
 
   // Generate
   try {
-    const { proposal, renderedText, meta } = await generateProposal(requirement);
+    const { proposal, renderedText, meta } = await generateProposal({
+      requirement,
+      pricingCtx,
+    });
 
     // Populate log from generation meta.
     // latencyMs here is model-only time; wallStart covers the full request.

@@ -107,7 +107,12 @@ body {
 .generate-btn,
 .btn-ghost,
 .btn-primary,
-.assumption-tag {
+.assumption-tag,
+.pricing-context,
+.client-type-toggle,
+.client-type-btn,
+.day-rate-input-wrap,
+.day-rate-input {
   transition:
     background 0.28s ease,
     border-color 0.24s ease,
@@ -920,3 +925,146 @@ body {
   transition: opacity 0.15s;
 }
 .vp-close-btn:hover { opacity: 0.84; }
+
+
+/* ── PRICING CONTEXT ─────────────────────────────────────── */
+/* The two-row block (client toggle + day rate input)         */
+/* that sits between the warnings list and the input footer.  */
+
+.pricing-context {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-mid);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* One label + control pair */
+.pricing-context-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Mono label ("Client" / "Day rate") */
+.pricing-context-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+/* ── CLIENT TYPE TOGGLE ──────────────────────────────────── */
+
+.client-type-toggle {
+  display: flex;
+  border: 1px solid var(--border-mid);
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.client-type-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 5px 10px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  /* separator between siblings */
+  border-right: 1px solid var(--border-mid);
+}
+
+.client-type-btn:last-child {
+  border-right: none;
+}
+
+.client-type-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-2);
+}
+
+.client-type-btn--active {
+  background: var(--bg-raised);
+  color: var(--text-1);
+  font-weight: 600;
+  border-color: var(--border-mid);   /* keep divider visible */
+}
+
+/* ── DAY RATE INPUT ──────────────────────────────────────── */
+
+.day-rate-input-wrap {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border-mid);
+  border-radius: 4px;
+  padding: 4px 10px;
+  min-width: 0;
+}
+
+.day-rate-input-wrap:focus-within {
+  border-color: var(--border-strong);
+}
+
+/* Currency symbol — ₹ or $ */
+.day-rate-currency {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  line-height: 1;
+  user-select: none;
+}
+
+.day-rate-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  /* hide browser spinners — we use step on keyboard only */
+  -moz-appearance: textfield;
+}
+
+.day-rate-input::-webkit-outer-spin-button,
+.day-rate-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.day-rate-input::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+/* "INR (₹) / day" suffix */
+.day-rate-suffix {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  flex-shrink: 0;
+  white-space: nowrap;
+  user-select: none;
+}

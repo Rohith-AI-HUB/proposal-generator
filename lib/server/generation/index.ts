@@ -18,6 +18,8 @@
 //   meta is internal only -- it is never included in the API response payload.
 
 import { buildSystemPrompt, buildUserMessage, buildRepairMessage } from "./prompt";
+import { applyPricingContext } from "./pricing";
+import type { PricingContext } from "./prompt";
 import { preprocessRequirement } from "./preprocessor";
 import { callModel } from "./model";
 import { validateProposal } from "./validator";
@@ -115,20 +117,28 @@ async function attempt(
 
 // --- generateProposal() ------------------------------------------------------
 
+export interface GenerateInput {
+  requirement: string;
+  pricingCtx:  PricingContext;
+}
+
 export async function generateProposal(
-  requirement: string
+  input: GenerateInput
 ): Promise<GenerationResult> {
-  const systemPrompt = buildSystemPrompt();
+  const { requirement, pricingCtx } = input;
+
+  const systemPrompt = buildSystemPrompt(pricingCtx);
   const signals      = preprocessRequirement(requirement);
-  const userMessage  = buildUserMessage(requirement, signals);
+  const userMessage  = buildUserMessage(requirement, pricingCtx, signals);
 
   // First attempt
   const first = await attempt(systemPrompt, userMessage, "MODEL_ERROR");
 
   if (first.ok) {
+    const proposal = applyPricingContext(first.proposal, pricingCtx);
     return {
-      proposal:     first.proposal,
-      renderedText: renderProposalText(first.proposal),
+      proposal,
+      renderedText: renderProposalText(proposal),
       meta: {
         latencyMs:    first.modelMeta.latencyMs,
         inputTokens:  first.modelMeta.inputTokens,
@@ -153,9 +163,10 @@ export async function generateProposal(
   const totalOutputTokens = first.modelMeta.outputTokens + repair.modelMeta.outputTokens;
 
   if (repair.ok) {
+    const proposal = applyPricingContext(repair.proposal, pricingCtx);
     return {
-      proposal:     repair.proposal,
-      renderedText: renderProposalText(repair.proposal),
+      proposal,
+      renderedText: renderProposalText(proposal),
       meta: {
         latencyMs:       totalLatencyMs,
         inputTokens:     totalInputTokens,

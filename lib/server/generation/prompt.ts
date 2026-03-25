@@ -4,6 +4,16 @@
 
 import type { RequirementSignals } from "./preprocessor";
 
+// --- Pricing context ---------------------------------------------------------
+// Passed in from the route layer. Drives all cost calculations.
+
+export interface PricingContext {
+  dayRate: number;         // Freelancer's day rate (integer, in the chosen currency)
+  clientType: "domestic" | "international";
+  currency: "INR" | "USD";
+  currencySymbol: string;  // "₹" or "$"
+}
+
 // --- Parts -------------------------------------------------------------------
 
 function rolePreamble(): string {
@@ -12,7 +22,7 @@ Your output is sent directly to the client -- no editing, no review.
 Write with the authority of someone who has done this a hundred times.`;
 }
 
-function outputContract(): string {
+function outputContract(currency: string): string {
   return `--------------------------------
 OUTPUT FORMAT -- STRICT
 --------------------------------
@@ -40,12 +50,21 @@ The JSON must exactly match this structure:
   "pricing": {
     "totalMin": number,
     "totalMax": number,
-    "currency": "USD",
+    "currency": "${currency}",
     "modules": [{ "module": string, "rationale": string, "cost": string }],
     "rationale": string,
     "valueJustification": string,
     "variabilityNote": string
   },
+  "clientCosts": [
+    {
+      "item": string,
+      "category": string,
+      "estimatedCost": string,
+      "mandatory": boolean,
+      "notes": string | null
+    }
+  ],
   "techStack": [{ "layer": string, "choice": string, "reason": string }],
   "boundaries": string[],
   "risks": string[],
@@ -69,7 +88,9 @@ RED    -> Not feasible as described.
          Only offer a reduced-scope path if one genuinely exists.`;
 }
 
-function contentRules(): string {
+function contentRules(pricingCtx: PricingContext): string {
+  const { dayRate, currency, currencySymbol } = pricingCtx;
+
   return `--------------------------------
 CONTENT RULES
 --------------------------------
@@ -81,15 +102,37 @@ scope.extended: Phase 2 nice-to-haves. Empty array if not applicable.
 deliverables: Exact outputs. No vague line items like "complete application."
 timeline.phases: Build in 15-20% buffer per phase for review cycles.
 timeline.dependencies: External blockers only. Empty array if none.
-pricing.totalMin / totalMax: Integers. USD. Use a range when scope has uncertainty.
-pricing.modules: Name at least 2 real cost drivers (auth complexity, integrations,
-  real-time features, third-party APIs, testing effort, custom logic, mobile support).
-pricing.rationale: 2-3 sentences. Specific cost drivers from THIS project.
-pricing.valueJustification: 1 sentence. What does this protect or enable long-term?
-pricing.variabilityNote: 1 sentence. What could shift the final number?
+
+PRICING -- CRITICAL RULES:
+  Freelancer day rate provided: ${currencySymbol}${dayRate} ${currency}/day.
+  You MUST use this rate as the ONLY basis for all cost calculations. Do NOT invent numbers.
+
+  FORMULA:
+    Phase cost     = phase.days x ${dayRate}
+    totalMin       = sum of all phase costs (no buffer)
+    totalMax       = totalMin x 1.25 (round to nearest integer, 25% scope buffer)
+
+  pricing.modules: EXACTLY one entry per timeline phase. Each cost field MUST show the
+    calculation explicitly, e.g. "18 days x ${currencySymbol}${dayRate} = ${currencySymbol}${18 * dayRate}".
+    Name at least 1 real cost driver (auth complexity, integrations,
+    real-time features, third-party APIs, testing effort, custom logic, mobile support).
+  pricing.currency: Always "${currency}". Do not change this.
+  pricing.rationale: 2-3 sentences. Reference actual phase days and rate from THIS project.
+  pricing.valueJustification: 1 sentence. What does this protect or enable long-term?
+  pricing.variabilityNote: 1 sentence. What could shift the final number up or down?
+
 techStack: Justify each choice against a specific need in THIS project.
   Correct: "Next.js -- required here for server-side rendering of dynamic booking pages."
   Wrong:   "Next.js -- great for modern web apps."
+clientCosts: List every tool, API, platform, or subscription the client must pay for directly.
+  This section is separate from the freelancer's fee. Do NOT include freelancer cost here.
+  Mandatory items: anything the project cannot go live without.
+  Categories to consider (include only what applies): Hosting, Domain, Payment Gateway,
+    SMS / OTP Service, Email Delivery, Maps API, CDN, Cloud Storage, SSL Certificate,
+    Push Notifications, Analytics, Customer Support SaaS, AI/LLM API.
+  For estimatedCost: use real approximate figures (e.g. "~${currencySymbol}800/month", "2% + ${currencySymbol}3 per transaction",
+    "Free tier available; paid from ~$20/month"). If unknown, write "Varies - check vendor pricing."
+  Return [] when direct client-borne costs are not identifiable from the requirement. Do NOT invent filler.
 boundaries: What is NOT covered. Specific, not generic disclaimers.
 risks: 1-3 items specific to this project. Empty array if none.
 assumptions: Only what materially affects cost, timeline, or scope.
@@ -130,22 +173,34 @@ Fix the output so it passes validation. Return ONLY a valid JSON object matching
 
 // --- Assembler ---------------------------------------------------------------
 
-export function buildSystemPrompt(): string {
+export function buildSystemPrompt(pricingCtx: PricingContext): string {
   return [
     rolePreamble(),
-    outputContract(),
+    outputContract(pricingCtx.currency),
     feasibilityRules(),
-    contentRules(),
+    contentRules(pricingCtx),
     outputReminder(),
   ].join("\n\n");
 }
 
-export function buildUserMessage(requirement: string, signals?: RequirementSignals): string {
+export function buildUserMessage(
+  requirement: string,
+  pricingCtx: PricingContext,
+  signals?: RequirementSignals,
+): string {
   const lines: string[] = [`Client Requirement:\n\n${requirement}`];
 
-  if (signals) {
-    lines.push("\n[CONTEXT SIGNALS -- calibrate feasibility, assumptions, and warnings accordingly]");
+  lines.push("\n[CONTEXT SIGNALS -- calibrate feasibility, assumptions, and warnings accordingly]");
 
+  lines.push(
+    `- Client type: ${pricingCtx.clientType === "domestic" ? "Domestic (India)" : "International"}`
+  );
+  lines.push(
+    `- Freelancer day rate: ${pricingCtx.currencySymbol}${pricingCtx.dayRate} ${pricingCtx.currency}/day. ` +
+    `Use this as the ONLY basis for all cost calculations. All pricing.modules[].cost fields must show explicit math.`
+  );
+
+  if (signals) {
     if (!signals.hasBudget) {
       lines.push("- Budget: NOT mentioned. Do NOT assume a fixed budget. Add to assumptions: 'Client has not specified a budget -- pricing is an estimate based on typical project scope.'");
     } else if (signals.extractedBudget) {

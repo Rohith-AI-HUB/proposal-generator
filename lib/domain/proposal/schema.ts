@@ -20,6 +20,14 @@ export interface TechChoice {
   reason: string;
 }
 
+export interface ClientCostItem {
+  item: string;           // e.g. "Razorpay payment gateway"
+  category: string;       // e.g. "Payment Gateway"
+  estimatedCost: string;  // e.g. "2% per transaction" or "~₹800/month"
+  mandatory: boolean;     // true = project cannot function without it
+  notes: string | null;   // optional clarification
+}
+
 export interface ProposalOverview {
   summary: string;
   outcome: string;
@@ -54,6 +62,7 @@ export interface Proposal {
   deliverables: string[];
   timeline: ProposalTimeline;
   pricing: ProposalPricing;
+  clientCosts: ClientCostItem[];
   techStack: TechChoice[];
   boundaries: string[];
   risks: string[];

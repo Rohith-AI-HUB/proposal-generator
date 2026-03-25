@@ -53,6 +53,17 @@ const PricingModuleSchema = z.object({
   cost: nonEmptyStr,
 });
 
+const ClientCostItemSchema = z.object({
+  item: nonEmptyStr,
+  category: nonEmptyStr,
+  estimatedCost: nonEmptyStr,
+  mandatory: z.boolean(),
+  notes: z
+    .union([z.string(), z.null()])
+    .nullable()
+    .transform((v) => (v == null || v.trim() === "" ? null : v.trim())),
+});
+
 const TechChoiceSchema = z.object({
   layer: nonEmptyStr,
   choice: nonEmptyStr,
@@ -135,7 +146,7 @@ export const ProposalSchema = z
         currency: trimmedStr.default("USD"),
         modules: z
           .array(PricingModuleSchema)
-          .min(2, "pricing must have at least 2 modules"),
+          .min(1, "pricing must have at least 1 module"),
         rationale: z
           .string()
           .trim()
@@ -152,6 +163,7 @@ export const ProposalSchema = z
       }),
 
     // Flat arrays -------------------------------------------------------------
+    clientCosts: z.array(ClientCostItemSchema).default([]),
     techStack: z.array(TechChoiceSchema),
     boundaries: strArray,
     risks: strArray,
