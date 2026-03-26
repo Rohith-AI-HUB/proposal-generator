@@ -6,9 +6,11 @@
 // can choose to add detail or proceed knowingly.
 
 import {
-  analyzeRequirement,
-  SPECIFICITY_MARKERS,
-} from "./signals";
+  buildClarificationContext,
+  hasClarificationAnswer,
+  type ClarificationAnswers,
+} from "./clarifications";
+import { analyzeRequirement, SPECIFICITY_MARKERS } from "./signals";
 
 export type WarningSeverity = "info" | "caution" | "conflict";
 
@@ -19,15 +21,30 @@ export interface InputWarning {
   detail: string;
 }
 
-export function computeWarnings(requirement: string): InputWarning[] {
-  const trimmed = requirement.trim();
-  if (trimmed.length < 10) return [];
+const SCOPE_CLARIFICATION_IDS = [
+  "user_scope",
+  "operating_region",
+  "payment_flow",
+  "notification_volume",
+  "compliance_constraints",
+] as const;
 
-  const signals = analyzeRequirement(trimmed);
-  const hasSpecifics = SPECIFICITY_MARKERS.some((p) => p.test(trimmed));
+export function computeWarnings(
+  requirement: string,
+  clarificationAnswers: ClarificationAnswers = {}
+): InputWarning[] {
+  const trimmedRequirement = requirement.trim();
+  if (trimmedRequirement.length < 10) return [];
+
+  const analysisInput = buildClarificationContext(trimmedRequirement, clarificationAnswers);
+  const signals = analyzeRequirement(analysisInput);
+  const hasSpecifics = SPECIFICITY_MARKERS.some((pattern) => pattern.test(analysisInput));
+  const hasScopedClarification = SCOPE_CLARIFICATION_IDS.some((id) =>
+    hasClarificationAnswer(clarificationAnswers, id)
+  );
   const warnings: InputWarning[] = [];
 
-  if (!signals.hasBudget) {
+  if (!signals.hasBudget && !hasClarificationAnswer(clarificationAnswers, "budget")) {
     warnings.push({
       id: "missing-budget",
       severity: "info",
@@ -37,7 +54,7 @@ export function computeWarnings(requirement: string): InputWarning[] {
     });
   }
 
-  if (!signals.hasDeadline) {
+  if (!signals.hasDeadline && !hasClarificationAnswer(clarificationAnswers, "deadline")) {
     warnings.push({
       id: "missing-deadline",
       severity: "info",
@@ -47,7 +64,7 @@ export function computeWarnings(requirement: string): InputWarning[] {
     });
   }
 
-  if (signals.wordCount < 25 && !hasSpecifics) {
+  if (signals.wordCount < 25 && !hasSpecifics && !hasScopedClarification) {
     warnings.push({
       id: "vague-scope",
       severity: "caution",

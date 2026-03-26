@@ -10,6 +10,7 @@ import type {
   GenerateResponse,
   Proposal,
 } from "@/lib/domain/proposal/schema";
+import type { ClarificationAnswers } from "@/lib/domain/proposal/clarifications";
 import { MAX_REQUIREMENT_LENGTH } from "@/lib/domain/proposal/constants";
 import { computeWarnings, type InputWarning } from "@/lib/domain/proposal/warnings";
 import { VersionPanel } from "@/components/VersionPanel";
@@ -44,19 +45,19 @@ export default function HomePage() {
   const [showVersion, setShowVersion] = useState(false);
   const [clarificationSummary, setClarificationSummary] = useState("");
   const [questions, setQuestions] = useState<ClarificationQuestion[]>([]);
-  const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
+  const [clarificationAnswers, setClarificationAnswers] = useState<ClarificationAnswers>({});
   const toolRef = useRef<HTMLDivElement>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     warningTimerRef.current = setTimeout(() => {
-      setWarnings(computeWarnings(requirement));
+      setWarnings(computeWarnings(requirement, clarificationAnswers));
     }, 600);
     return () => {
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     };
-  }, [requirement]);
+  }, [clarificationAnswers, requirement]);
 
   function handleClientTypeChange(type: ClientType) {
     setClientType(type);
@@ -87,7 +88,7 @@ export default function HomePage() {
     setQuestions([]);
   }
 
-  async function generate(req: string, answers: Record<string, string> = {}) {
+  async function generate(req: string, answers: ClarificationAnswers = {}) {
     setLoading(true);
     setError("");
     resetDraftState();

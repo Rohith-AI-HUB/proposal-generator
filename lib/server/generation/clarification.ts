@@ -1,3 +1,8 @@
+import {
+  buildClarificationContext,
+  hasClarificationAnswer,
+  type ClarificationAnswers,
+} from "@/lib/domain/proposal/clarifications";
 import { analyzeRequirement, type RequirementSignals } from "@/lib/domain/proposal/signals";
 import type { ClarificationQuestion } from "@/lib/domain/proposal/schema";
 
@@ -9,8 +14,6 @@ export interface ClarificationDecision {
   enrichedRequirement: string;
   signals: RequirementSignals;
 }
-
-type AnswerMap = Record<string, string>;
 
 const TEAM_SIZE_PATTERNS = [
   /\b\d+\s+(?:users?|staff|employees?|agents?|admins?|clinicians?|teachers?|managers?)\b/i,
@@ -112,21 +115,6 @@ function hasPattern(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function hasAnswer(answers: AnswerMap, id: string): boolean {
-  return typeof answers[id] === "string" && answers[id].trim().length > 0;
-}
-
-function appendClarificationContext(requirement: string, answers: AnswerMap): string {
-  const entries = Object.entries(answers)
-    .map(([key, value]) => [key.trim(), value.trim()] as const)
-    .filter(([, value]) => value.length > 0);
-
-  if (entries.length === 0) return requirement.trim();
-
-  const lines = entries.map(([key, value]) => `- ${key}: ${value}`);
-  return `${requirement.trim()}\n\nClarification Answers:\n${lines.join("\n")}`;
-}
-
 function prioritizeMissingIds(missingIds: string[]): string[] {
   const priorityIndex = new Map<string, number>(
     QUESTION_PRIORITY.map((id, index) => [id, index] as const)
@@ -141,9 +129,9 @@ function prioritizeMissingIds(missingIds: string[]): string[] {
 
 export function evaluateClarifications(
   requirement: string,
-  clarificationAnswers: AnswerMap = {}
+  clarificationAnswers: ClarificationAnswers = {}
 ): ClarificationDecision {
-  const enrichedRequirement = appendClarificationContext(requirement, clarificationAnswers);
+  const enrichedRequirement = buildClarificationContext(requirement, clarificationAnswers);
   const signals = analyzeRequirement(enrichedRequirement);
 
   const mentionsNotifications = hasPattern(enrichedRequirement, NOTIFICATION_PATTERNS);
@@ -151,32 +139,41 @@ export function evaluateClarifications(
 
   const missingIds: string[] = [];
 
-  if (!signals.hasBudget && !hasAnswer(clarificationAnswers, "budget")) {
+  if (!signals.hasBudget && !hasClarificationAnswer(clarificationAnswers, "budget")) {
     missingIds.push("budget");
   }
-  if (!signals.hasDeadline && !hasAnswer(clarificationAnswers, "deadline")) {
+  if (!signals.hasDeadline && !hasClarificationAnswer(clarificationAnswers, "deadline")) {
     missingIds.push("deadline");
   }
-  if (!hasPattern(enrichedRequirement, TEAM_SIZE_PATTERNS) && !hasAnswer(clarificationAnswers, "user_scope")) {
+  if (
+    !hasPattern(enrichedRequirement, TEAM_SIZE_PATTERNS) &&
+    !hasClarificationAnswer(clarificationAnswers, "user_scope")
+  ) {
     missingIds.push("user_scope");
   }
-  if (!hasPattern(enrichedRequirement, REGION_PATTERNS) && !hasAnswer(clarificationAnswers, "operating_region")) {
+  if (
+    !hasPattern(enrichedRequirement, REGION_PATTERNS) &&
+    !hasClarificationAnswer(clarificationAnswers, "operating_region")
+  ) {
     missingIds.push("operating_region");
   }
-  if (!hasPattern(enrichedRequirement, PAYMENT_PATTERNS) && !hasAnswer(clarificationAnswers, "payment_flow")) {
+  if (
+    !hasPattern(enrichedRequirement, PAYMENT_PATTERNS) &&
+    !hasClarificationAnswer(clarificationAnswers, "payment_flow")
+  ) {
     missingIds.push("payment_flow");
   }
   if (
     mentionsNotifications &&
     !hasPattern(enrichedRequirement, VOLUME_PATTERNS) &&
-    !hasAnswer(clarificationAnswers, "notification_volume")
+    !hasClarificationAnswer(clarificationAnswers, "notification_volume")
   ) {
     missingIds.push("notification_volume");
   }
   if (
     requiresComplianceCheck &&
     !hasPattern(enrichedRequirement, COMPLIANCE_PATTERNS) &&
-      !hasAnswer(clarificationAnswers, "compliance_constraints")
+    !hasClarificationAnswer(clarificationAnswers, "compliance_constraints")
   ) {
     missingIds.push("compliance_constraints");
   }
