@@ -33,7 +33,7 @@ export function computeWarnings(requirement: string): InputWarning[] {
       severity: "info",
       label: "No budget mentioned",
       detail:
-        "Without a budget, pricing will be estimated. The proposal will note this as an assumption.",
+        "Without a budget, pricing confidence stays weak and the app will ask follow-up questions before drafting.",
     });
   }
 
@@ -43,7 +43,7 @@ export function computeWarnings(requirement: string): InputWarning[] {
       severity: "info",
       label: "No timeline or deadline mentioned",
       detail:
-        "The proposal will suggest a realistic schedule. Add a deadline if one exists.",
+        "The app can draft a schedule, but it will treat the timeline as an estimate until you clarify this.",
     });
   }
 
@@ -53,7 +53,7 @@ export function computeWarnings(requirement: string): InputWarning[] {
       severity: "caution",
       label: "Scope too vague for fixed pricing",
       detail:
-        "The requirement is short and lacks specific features. The proposal will stay minimal and flag this as an open assumption.",
+        "The requirement is short and lacks specific features. Expect clarification questions before any draft is generated.",
     });
   }
 

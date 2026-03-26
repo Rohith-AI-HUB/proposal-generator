@@ -3,6 +3,7 @@
 // Nothing is hard-coded in route.ts or model.ts.
 
 import type { RequirementSignals } from "./preprocessor";
+import type { ResearchPacket } from "./research";
 
 // --- Pricing context ---------------------------------------------------------
 // Passed in from the route layer. Drives all cost calculations.
@@ -17,9 +18,9 @@ export interface PricingContext {
 // --- Parts -------------------------------------------------------------------
 
 function rolePreamble(): string {
-  return `You are a senior freelance software consultant closing a client deal.
-Your output is sent directly to the client -- no editing, no review.
-Write with the authority of someone who has done this a hundred times.`;
+  return `You are a senior freelance software consultant preparing a first-draft proposal.
+The draft will be reviewed by the freelancer before it is sent to the client.
+Write clearly, directly, and honestly. Do not bluff.`;
 }
 
 function outputContract(currency: string): string {
@@ -62,7 +63,11 @@ The JSON must exactly match this structure:
       "category": string,
       "estimatedCost": string,
       "mandatory": boolean,
-      "notes": string | null
+      "notes": string | null,
+      "sourceTitle": string | null,
+      "sourceUrl": string | null,
+      "sourceRationale": string | null,
+      "confidence": "high" | "medium" | "low"
     }
   ],
   "techStack": [{ "layer": string, "choice": string, "reason": string }],
@@ -96,7 +101,7 @@ CONTENT RULES
 --------------------------------
 
 overview.summary: 2-4 sentences. Professional reframe of the requirement around client outcome.
-overview.outcome: 1 sentence. "This will allow [who] to [outcome] within [timeframe]."
+overview.outcome: 1 sentence. "This draft is intended to help [who] achieve [outcome]."
 scope.core: Phase 1 must-haves only. No speculation.
 scope.extended: Phase 2 nice-to-haves. Empty array if not applicable.
 deliverables: Exact outputs. No vague line items like "complete application."
@@ -119,9 +124,11 @@ PRICING -- CRITICAL RULES:
   pricing.currency: Always "${currency}". Do not change this.
   pricing.rationale: 2-3 sentences. Reference actual phase days and rate from THIS project.
   pricing.valueJustification: 1 sentence. What does this protect or enable long-term?
-  pricing.variabilityNote: 1 sentence. What could shift the final number up or down?
+  pricing.variabilityNote: 1 sentence. What could shift the final estimate up or down?
 
-techStack: Justify each choice against a specific need in THIS project.
+techStack: Return [] unless the requirement explicitly implies a technical constraint, platform requirement,
+  legacy stack, real-time need, native app need, or integration that justifies a concrete stack choice.
+  When used, justify each choice against a specific need in THIS project.
   Correct: "Next.js -- required here for server-side rendering of dynamic booking pages."
   Wrong:   "Next.js -- great for modern web apps."
 clientCosts: List every tool, API, platform, or subscription the client must pay for directly.
@@ -132,6 +139,8 @@ clientCosts: List every tool, API, platform, or subscription the client must pay
     Push Notifications, Analytics, Customer Support SaaS, AI/LLM API.
   For estimatedCost: use real approximate figures (e.g. "~${currencySymbol}800/month", "2% + ${currencySymbol}3 per transaction",
     "Free tier available; paid from ~$20/month"). If unknown, write "Varies - check vendor pricing."
+  sourceTitle / sourceUrl / sourceRationale: include them only when the client cost is grounded in verified research.
+    If the cost is a placeholder or usage-based guess, set all three to null and set confidence to "low".
   Return [] when direct client-borne costs are not identifiable from the requirement. Do NOT invent filler.
 boundaries: What is NOT covered. Specific, not generic disclaimers.
 risks: 1-3 items specific to this project. Empty array if none.
@@ -144,7 +153,11 @@ HARD RULES:
 - No repeated information across fields
 - No placeholders left in the output
 - If input is vague -> stay minimal, do not invent scope
-- If input is contradictory -> interpret, constrain, note the assumption`;
+- If input is contradictory -> interpret, constrain, note the assumption
+- Timeline and pricing are estimates, not commitments. Phrase them accordingly.
+- Do not present current vendor pricing, platform limits, or market facts as certain unless grounded in the verified research context
+- If verified research is missing or weak, say so explicitly in assumptions or risks instead of bluffing
+- Prefer reduced-scope options over false certainty when feasibility is orange or red`;
 }
 
 function outputReminder(): string {
@@ -187,6 +200,7 @@ export function buildUserMessage(
   requirement: string,
   pricingCtx: PricingContext,
   signals?: RequirementSignals,
+  research?: ResearchPacket | null,
 ): string {
   const lines: string[] = [`Client Requirement:\n\n${requirement}`];
 
@@ -222,6 +236,47 @@ export function buildUserMessage(
     if (signals.hasBudgetTimelineConflict) {
       lines.push("- Conflict detected: Large scope vocabulary combined with a tight deadline. Set feasibility to orange or red. Explain the tension explicitly in feasibilityNote.");
     }
+  }
+
+  if (research) {
+    lines.push("\n[VERIFIED RESEARCH -- use this for factual claims and client-borne costs]");
+    lines.push(`- Research quality: ${research.dataQuality.toUpperCase()}. ${research.caveat}`);
+    lines.push(`- Research summary: ${research.summary}`);
+
+    if (research.evidence.length > 0) {
+      research.evidence.forEach((item) =>
+        lines.push(`- Verified ${item.section} fact: ${item.claim} (source rationale: ${item.sourceRationale})`)
+      );
+    } else {
+      lines.push("- Verified fact coverage: sparse. Keep factual claims minimal.");
+    }
+
+    if (research.vendorCosts.length > 0) {
+      research.vendorCosts.forEach((cost) => {
+        const note = cost.notes ? ` (${cost.notes})` : "";
+        lines.push(
+          `- Verified client cost [${cost.confidence.toUpperCase()}]: ${cost.category} -- ${cost.item} -- ${cost.estimatedCost}${note}`
+        );
+      });
+    } else {
+      lines.push("- Verified client costs: none confirmed. Use \"Varies - verify current vendor pricing.\" where needed.");
+    }
+
+    if (research.openQuestions.length > 0) {
+      research.openQuestions.forEach((question) =>
+        lines.push(`- Research gap: ${question}`)
+      );
+    }
+
+    if (research.sources.length > 0) {
+      lines.push("- Sources consulted:");
+      research.sources.forEach((source) =>
+        lines.push(`  - ${source.title} | ${source.url}`)
+      );
+    }
+  } else {
+    lines.push("\n[RESEARCH STATUS]");
+    lines.push("- Live web research was unavailable for this run. Avoid strong factual claims about current vendor pricing or platform limits.");
   }
 
   return lines.join("\n");

@@ -1,31 +1,19 @@
-// Orchestrates the full generation pipeline.
-// route.ts calls generateProposal() and nothing else.
-//
-// Retry contract:
-//   1. First attempt: full system prompt + user message with signals.
-//   2. On JSON parse or schema validation failure: one repair attempt using
-//      a terse prompt with the raw output and the failure reason.
-//   3. If repair also fails: throw GenerationError("REPAIR_FAILED"). Done.
-//
-// Normalization:
-//   The Zod schema in validateProposal trims, clamps, filters blanks, and
-//   derives totalDays. normalizeProposal is not called separately.
-//
-// Meta:
-//   attempt() accumulates model latency and token counts.
-//   generateProposal() returns GenerationResult.meta so route.ts can emit
-//   a structured log without coupling the logger to this module.
-//   meta is internal only -- it is never included in the API response payload.
-
 import { buildSystemPrompt, buildUserMessage, buildRepairMessage } from "./prompt";
 import { applyPricingContext } from "./pricing";
 import type { PricingContext } from "./prompt";
-import { preprocessRequirement } from "./preprocessor";
-import { callModel } from "./model";
+import { callModel, type ModelResponse } from "./model";
+import { researchRequirement, type ResearchPacket } from "./research";
 import { validateProposal } from "./validator";
 import { renderProposalText } from "@/lib/server/rendering";
-import type { Proposal, ErrorCode } from "@/lib/domain/proposal/schema";
+import type {
+  ClarificationQuestion,
+  ErrorCode,
+  Proposal,
+  ProposalSource,
+} from "@/lib/domain/proposal/schema";
 import { ERROR_MESSAGES } from "@/lib/domain/proposal/constants";
+import { evaluateClarifications } from "./clarification";
+import { applyTrustContext } from "./trust";
 
 export class GenerationError extends Error {
   constructor(
@@ -37,58 +25,93 @@ export class GenerationError extends Error {
   }
 }
 
-// GenerationMeta is returned alongside the proposal so route.ts can build
-// a structured log entry without needing to know about model internals.
 export interface GenerationMeta {
-  latencyMs:        number;  // wall-clock ms for all model calls combined
-  inputTokens:      number;  // total across first attempt + repair (if used)
-  outputTokens:     number;  // total across first attempt + repair (if used)
-  repairUsed:       boolean;
-  firstFailReason?: string;  // reason string from first attempt if it failed
-  repairFailReason?: string; // reason string from repair attempt if it also failed
+  latencyMs: number;
+  inputTokens: number;
+  outputTokens: number;
+  repairUsed: boolean;
+  clarificationIssued: boolean;
+  clarificationCount: number;
+  sourceCount: number;
+  unsupportedClaimCount: number;
+  sourceDomainQuality: "strong" | "mixed" | "weak" | null;
+  firstFailReason?: string;
+  repairFailReason?: string;
 }
 
-export interface GenerationResult {
-  proposal:     Proposal;
-  renderedText: string;
-  meta:         GenerationMeta;
-}
-
-// --- Internal attempt result -------------------------------------------------
+export type GenerationResult =
+  | {
+      status: "ready";
+      proposal: Proposal;
+      renderedText: string;
+      meta: GenerationMeta;
+    }
+  | {
+      status: "needs_clarification";
+      summary: string;
+      questions: ClarificationQuestion[];
+      meta: GenerationMeta;
+    };
 
 interface ModelMeta {
-  latencyMs:    number;
-  inputTokens:  number;
+  latencyMs: number;
+  inputTokens: number;
   outputTokens: number;
 }
 
-type AttemptOk   = { ok: true;  proposal: Proposal; modelMeta: ModelMeta };
+type AttemptOk = { ok: true; proposal: Proposal; modelMeta: ModelMeta };
 type AttemptFail = { ok: false; rawText: string; reason: string; modelMeta: ModelMeta };
 type AttemptResult = AttemptOk | AttemptFail;
 
 const EMPTY_META: ModelMeta = { latencyMs: 0, inputTokens: 0, outputTokens: 0 };
 
-// --- attempt() ---------------------------------------------------------------
-//
-// Makes one model call, parses JSON, and validates against the Zod schema.
-// Returns a typed discriminated union -- never throws on parse/validation
-// failures; only throws GenerationError on a hard model/network error.
+function assessSourceDomainQuality(
+  sources: ProposalSource[]
+): "strong" | "mixed" | "weak" | null {
+  if (sources.length === 0) return "weak";
+
+  let strongCount = 0;
+
+  for (const source of sources) {
+    try {
+      const url = new URL(source.url);
+      const host = url.hostname.replace(/^www\./i, "");
+      const path = url.pathname.toLowerCase();
+      const strong =
+        /(?:docs|help|api|pricing)/.test(path) ||
+        host.split(".").length <= 2 ||
+        host.startsWith("docs.") ||
+        host.startsWith("help.");
+
+      if (strong) strongCount += 1;
+    } catch {
+      // Ignore parse failures and let them drag the quality down.
+    }
+  }
+
+  if (strongCount === sources.length) return "strong";
+  if (strongCount > 0) return "mixed";
+  return "weak";
+}
 
 async function attempt(
   systemPrompt: string,
-  userMessage:  string,
-  errorCode:    ErrorCode
+  userMessage: string,
+  errorCode: ErrorCode,
+  modelCaller: (
+    systemPrompt: string,
+    userMessage: string
+  ) => Promise<ModelResponse>
 ): Promise<AttemptResult> {
-
-  // Model call
   let modelMeta: ModelMeta = EMPTY_META;
   let rawText: string;
+
   try {
-    const response = await callModel(systemPrompt, userMessage);
-    rawText  = response.text;
+    const response = await modelCaller(systemPrompt, userMessage);
+    rawText = response.text;
     modelMeta = {
-      latencyMs:    response.latencyMs,
-      inputTokens:  response.inputTokens  ?? 0,
+      latencyMs: response.latencyMs,
+      inputTokens: response.inputTokens ?? 0,
       outputTokens: response.outputTokens ?? 0,
     };
   } catch (err) {
@@ -96,7 +119,6 @@ async function attempt(
     throw new GenerationError(errorCode, ERROR_MESSAGES.MODEL_ERROR);
   }
 
-  // JSON parse
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawText);
@@ -105,7 +127,6 @@ async function attempt(
     return { ok: false, rawText, reason: "Response was not valid JSON.", modelMeta };
   }
 
-  // Schema validation + normalization
   const result = validateProposal(parsed);
   if (!result.success) {
     console.warn("[attempt] schema validation failed:", result.reason);
@@ -115,69 +136,163 @@ async function attempt(
   return { ok: true, proposal: result.data, modelMeta };
 }
 
-// --- generateProposal() ------------------------------------------------------
+function buildClarificationMeta(
+  questionCount: number
+): GenerationMeta {
+  return {
+    latencyMs: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    repairUsed: false,
+    clarificationIssued: true,
+    clarificationCount: questionCount,
+    sourceCount: 0,
+    unsupportedClaimCount: 0,
+    sourceDomainQuality: null,
+  };
+}
 
 export interface GenerateInput {
   requirement: string;
-  pricingCtx:  PricingContext;
+  pricingCtx: PricingContext;
+  clarificationAnswers?: Record<string, string>;
 }
 
+export interface GenerationDependencies {
+  callModel: (
+    systemPrompt: string,
+    userMessage: string
+  ) => Promise<ModelResponse>;
+  researchRequirement: (
+    requirement: string,
+    pricingCtx: PricingContext
+  ) => Promise<ResearchPacket>;
+}
+
+const DEFAULT_DEPENDENCIES: GenerationDependencies = {
+  callModel,
+  researchRequirement,
+};
+
 export async function generateProposal(
-  input: GenerateInput
+  input: GenerateInput,
+  deps: GenerationDependencies = DEFAULT_DEPENDENCIES
 ): Promise<GenerationResult> {
-  const { requirement, pricingCtx } = input;
+  const { requirement, pricingCtx, clarificationAnswers = {} } = input;
 
+  const clarification = evaluateClarifications(requirement, clarificationAnswers);
+
+  if (clarification.needsClarification) {
+    return {
+      status: "needs_clarification",
+      summary: clarification.summary,
+      questions: clarification.questions,
+      meta: buildClarificationMeta(clarification.questions.length),
+    };
+  }
+
+  const enrichedRequirement = clarification.enrichedRequirement;
+  const signals = clarification.signals;
   const systemPrompt = buildSystemPrompt(pricingCtx);
-  const signals      = preprocessRequirement(requirement);
-  const userMessage  = buildUserMessage(requirement, pricingCtx, signals);
 
-  // First attempt
-  const first = await attempt(systemPrompt, userMessage, "MODEL_ERROR");
+  let research: ResearchPacket | null = null;
+  let researchLatencyMs = 0;
+
+  try {
+    const researchStart = Date.now();
+    research = await deps.researchRequirement(enrichedRequirement, pricingCtx);
+    researchLatencyMs = Date.now() - researchStart;
+  } catch (err) {
+    console.warn("[generateProposal] research stage failed:", err);
+  }
+
+  const userMessage = buildUserMessage(
+    enrichedRequirement,
+    pricingCtx,
+    signals,
+    research
+  );
+
+  const first = await attempt(
+    systemPrompt,
+    userMessage,
+    "MODEL_ERROR",
+    deps.callModel
+  );
 
   if (first.ok) {
-    const proposal = applyPricingContext(first.proposal, pricingCtx);
+    const proposal = applyTrustContext(
+      applyPricingContext(first.proposal, pricingCtx),
+      enrichedRequirement,
+      signals,
+      research
+    );
+
     return {
+      status: "ready",
       proposal,
       renderedText: renderProposalText(proposal),
       meta: {
-        latencyMs:    first.modelMeta.latencyMs,
-        inputTokens:  first.modelMeta.inputTokens,
+        latencyMs: researchLatencyMs + first.modelMeta.latencyMs,
+        inputTokens: first.modelMeta.inputTokens,
         outputTokens: first.modelMeta.outputTokens,
-        repairUsed:   false,
+        repairUsed: false,
+        clarificationIssued: false,
+        clarificationCount: 0,
+        sourceCount: proposal.sources.length,
+        unsupportedClaimCount: proposal.unsupportedClaims.length,
+        sourceDomainQuality: assessSourceDomainQuality(proposal.sources),
       },
     };
   }
 
-  // Repair attempt
   console.warn(
     "[generateProposal] first attempt failed -- attempting repair. Reason:",
     first.reason
   );
 
   const repairMessage = buildRepairMessage(first.rawText, first.reason);
-  const repair = await attempt(systemPrompt, repairMessage, "REPAIR_FAILED");
+  const repair = await attempt(
+    systemPrompt,
+    repairMessage,
+    "REPAIR_FAILED",
+    deps.callModel
+  );
 
-  // Accumulate tokens across both attempts
-  const totalLatencyMs    = first.modelMeta.latencyMs    + repair.modelMeta.latencyMs;
-  const totalInputTokens  = first.modelMeta.inputTokens  + repair.modelMeta.inputTokens;
-  const totalOutputTokens = first.modelMeta.outputTokens + repair.modelMeta.outputTokens;
+  const totalLatencyMs =
+    researchLatencyMs + first.modelMeta.latencyMs + repair.modelMeta.latencyMs;
+  const totalInputTokens =
+    first.modelMeta.inputTokens + repair.modelMeta.inputTokens;
+  const totalOutputTokens =
+    first.modelMeta.outputTokens + repair.modelMeta.outputTokens;
 
   if (repair.ok) {
-    const proposal = applyPricingContext(repair.proposal, pricingCtx);
+    const proposal = applyTrustContext(
+      applyPricingContext(repair.proposal, pricingCtx),
+      enrichedRequirement,
+      signals,
+      research
+    );
+
     return {
+      status: "ready",
       proposal,
       renderedText: renderProposalText(proposal),
       meta: {
-        latencyMs:       totalLatencyMs,
-        inputTokens:     totalInputTokens,
-        outputTokens:    totalOutputTokens,
-        repairUsed:      true,
+        latencyMs: totalLatencyMs,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        repairUsed: true,
+        clarificationIssued: false,
+        clarificationCount: 0,
+        sourceCount: proposal.sources.length,
+        unsupportedClaimCount: proposal.unsupportedClaims.length,
+        sourceDomainQuality: assessSourceDomainQuality(proposal.sources),
         firstFailReason: first.reason,
       },
     };
   }
 
-  // Both attempts exhausted -- hard fail
   console.error("[generateProposal] repair attempt also failed:", repair.reason);
   throw new GenerationError("REPAIR_FAILED", ERROR_MESSAGES.REPAIR_FAILED);
 }

@@ -80,6 +80,19 @@ export function normalizeProposal(p: Proposal): Proposal {
       notes: (c as { notes: unknown }).notes
         ? trimStr((c as { notes: unknown }).notes)
         : null,
+      sourceTitle: (c as { sourceTitle: unknown }).sourceTitle
+        ? trimStr((c as { sourceTitle: unknown }).sourceTitle)
+        : null,
+      sourceUrl: (c as { sourceUrl: unknown }).sourceUrl
+        ? trimStr((c as { sourceUrl: unknown }).sourceUrl)
+        : null,
+      sourceRationale: (c as { sourceRationale: unknown }).sourceRationale
+        ? trimStr((c as { sourceRationale: unknown }).sourceRationale)
+        : null,
+      confidence: (c as { confidence?: unknown }).confidence === "high" ||
+        (c as { confidence?: unknown }).confidence === "medium"
+        ? ((c as { confidence: "high" | "medium" }).confidence)
+        : "low",
     })),
     techStack: safeArray(p.techStack).map((t) => ({
       layer: trimStr((t as { layer: unknown }).layer),
@@ -90,5 +103,35 @@ export function normalizeProposal(p: Proposal): Proposal {
     risks: safeArray<string>(p.risks).map(trimStr),
     assumptions: safeArray<string>(p.assumptions).map(trimStr),
     nextSteps: safeArray<string>(p.nextSteps).map(trimStr),
+    confidence: {
+      overall: p.confidence.overall,
+      note: trimStr(p.confidence.note),
+      sections: safeArray(p.confidence.sections).map((section) => ({
+        section: trimStr((section as { section: unknown }).section) as Proposal["confidence"]["sections"][number]["section"],
+        level: (section as { level?: unknown }).level === "high" ||
+          (section as { level?: unknown }).level === "medium"
+          ? ((section as { level: "high" | "medium" }).level)
+          : "low",
+        reason: trimStr((section as { reason: unknown }).reason),
+      })),
+    },
+    evidence: safeArray(p.evidence).map((item) => ({
+      claim: trimStr((item as { claim: unknown }).claim),
+      section: trimStr((item as { section: unknown }).section) as Proposal["evidence"][number]["section"],
+      sourceTitle: trimStr((item as { sourceTitle: unknown }).sourceTitle),
+      sourceUrl: trimStr((item as { sourceUrl: unknown }).sourceUrl),
+      sourceRationale: trimStr((item as { sourceRationale: unknown }).sourceRationale),
+    })),
+    unsupportedClaims: safeArray(p.unsupportedClaims).map((item) => ({
+      claim: trimStr((item as { claim: unknown }).claim),
+      reason: trimStr((item as { reason: unknown }).reason),
+    })),
+    sources: safeArray(p.sources).map((s) => ({
+      title: trimStr((s as { title: unknown }).title),
+      url: trimStr((s as { url: unknown }).url),
+      snippet: (s as { snippet: unknown }).snippet
+        ? trimStr((s as { snippet: unknown }).snippet)
+        : null,
+    })),
   };
 }

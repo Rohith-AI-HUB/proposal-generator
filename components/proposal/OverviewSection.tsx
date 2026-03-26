@@ -2,18 +2,27 @@
 
 import { SectionCard } from "./shared";
 import { FEASIBILITY_CONFIG } from "@/lib/domain/proposal/constants";
-import type { ProposalOverview } from "@/lib/domain/proposal/schema";
+import type { ConfidenceLevel, ProposalOverview } from "@/lib/domain/proposal/schema";
 
 export function OverviewSection({
   overview,
   id,
+  confidenceLevel,
+  confidenceReason,
 }: {
   overview: ProposalOverview;
   id?: string;
+  confidenceLevel?: ConfidenceLevel;
+  confidenceReason?: string;
 }) {
   const cfg = FEASIBILITY_CONFIG[overview.feasibility];
   return (
-    <SectionCard title="Project Overview" id={id}>
+    <SectionCard
+      title="Project Overview"
+      id={id}
+      confidenceLevel={confidenceLevel}
+      confidenceReason={confidenceReason}
+    >
       <p className="overview-summary">{overview.summary}</p>
       <p className="overview-outcome">{overview.outcome}</p>
       <div

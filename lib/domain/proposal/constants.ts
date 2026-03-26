@@ -11,6 +11,31 @@ export const MODEL_CONFIG = {
   temperature: 0.3, // Lower = more deterministic JSON structure
 } as const;
 
+export const RESEARCH_MODEL_CONFIG = {
+  model: "groq/compound-mini",
+  maxTokens: 1800,
+  temperature: 0.1,
+} as const;
+
+export const RESEARCH_EXCLUDED_DOMAINS = [
+  "instagram.com",
+  "*.instagram.com",
+  "facebook.com",
+  "*.facebook.com",
+  "x.com",
+  "*.x.com",
+  "twitter.com",
+  "*.twitter.com",
+  "reddit.com",
+  "*.reddit.com",
+  "youtube.com",
+  "*.youtube.com",
+  "tiktok.com",
+  "*.tiktok.com",
+  "medium.com",
+  "*.medium.com",
+] as const;
+
 // ─── Validation guardrails ────────────────────────────────────────────────────
 // Values are currency-neutral integers — they cover both USD and INR ranges.
 // INR projects can reach ₹50,00,000+ for large scopes; max is set accordingly.

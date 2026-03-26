@@ -101,11 +101,22 @@ export async function POST(req: NextRequest) {
   // Parse request body
   let requirement: string;
   let pricingCtx: PricingContext;
+  let clarificationAnswers: Record<string, string> = {};
   try {
     const body = await req.json() as Record<string, unknown>;
     requirement =
       typeof body?.requirement === "string" ? body.requirement.trim() : "";
     pricingCtx = parsePricingContext(body);
+    clarificationAnswers =
+      body?.clarificationAnswers &&
+      typeof body.clarificationAnswers === "object" &&
+      !Array.isArray(body.clarificationAnswers)
+        ? Object.fromEntries(
+            Object.entries(body.clarificationAnswers as Record<string, unknown>)
+              .filter(([, value]) => typeof value === "string")
+              .map(([key, value]) => [key, (value as string).trim()])
+          )
+        : {};
   } catch {
     log.status       = 400;
     log.failureClass = "INVALID_BODY";
@@ -132,10 +143,13 @@ export async function POST(req: NextRequest) {
 
   // Generate
   try {
-    const { proposal, renderedText, meta } = await generateProposal({
+    const result = await generateProposal({
       requirement,
       pricingCtx,
+      clarificationAnswers,
     });
+
+    const { meta } = result;
 
     // Populate log from generation meta.
     // latencyMs here is model-only time; wallStart covers the full request.
@@ -146,13 +160,29 @@ export async function POST(req: NextRequest) {
     log.inputTokens  = meta.inputTokens;
     log.outputTokens = meta.outputTokens;
     log.repairUsed   = meta.repairUsed;
+    log.clarificationIssued = meta.clarificationIssued;
+    log.clarificationCount = meta.clarificationCount;
+    log.sourceCount = meta.sourceCount;
+    log.unsupportedClaimCount = meta.unsupportedClaimCount;
+    log.sourceDomainQuality = meta.sourceDomainQuality;
     // If repair succeeded, record the first-attempt failure reason for analysis
     if (meta.repairUsed && meta.firstFailReason) {
       log.validationFailReason = meta.firstFailReason;
     }
     emitLog(log);
 
-    const body: GenerateResponse = { proposal, renderedText };
+    const body: GenerateResponse =
+      result.status === "ready"
+        ? {
+            status: "ready",
+            proposal: result.proposal,
+            renderedText: result.renderedText,
+          }
+        : {
+            status: "needs_clarification",
+            summary: result.summary,
+            questions: result.questions,
+          };
     return NextResponse.json(body);
 
   } catch (err) {

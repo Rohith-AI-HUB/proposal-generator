@@ -1,6 +1,28 @@
 // All Proposal types. Single source of truth for domain, server, and UI.
 
 export type FeasibilityLevel = "green" | "amber" | "orange" | "red";
+export type ConfidenceLevel = "high" | "medium" | "low";
+
+export type ProposalSectionId =
+  | "overview"
+  | "scope"
+  | "deliverables"
+  | "timeline"
+  | "pricing"
+  | "clientCosts"
+  | "techStack"
+  | "boundaries"
+  | "risks"
+  | "assumptions"
+  | "nextSteps";
+
+export interface ClarificationQuestion {
+  id: string;
+  label: string;
+  question: string;
+  placeholder: string;
+  reason: string;
+}
 
 export interface TimelinePhase {
   name: string;
@@ -21,11 +43,46 @@ export interface TechChoice {
 }
 
 export interface ClientCostItem {
-  item: string;           // e.g. "Razorpay payment gateway"
-  category: string;       // e.g. "Payment Gateway"
-  estimatedCost: string;  // e.g. "2% per transaction" or "~₹800/month"
-  mandatory: boolean;     // true = project cannot function without it
-  notes: string | null;   // optional clarification
+  item: string;
+  category: string;
+  estimatedCost: string;
+  mandatory: boolean;
+  notes: string | null;
+  sourceTitle: string | null;
+  sourceUrl: string | null;
+  sourceRationale: string | null;
+  confidence: ConfidenceLevel;
+}
+
+export interface ProposalSource {
+  title: string;
+  url: string;
+  snippet: string | null;
+}
+
+export interface ProposalEvidence {
+  claim: string;
+  section: ProposalSectionId | "overview";
+  sourceTitle: string;
+  sourceUrl: string;
+  sourceRationale: string;
+}
+
+export interface ProposalUnsupportedClaim {
+  claim: string;
+  reason: string;
+}
+
+export interface ProposalSectionConfidence {
+  section: ProposalSectionId;
+  level: ConfidenceLevel;
+  reason: string;
+}
+
+export interface ProposalConfidence {
+  overall: ConfidenceLevel;
+  note: string;
+  sections: ProposalSectionConfidence[];
 }
 
 export interface ProposalOverview {
@@ -68,14 +125,27 @@ export interface Proposal {
   risks: string[];
   assumptions: string[];
   nextSteps: string[];
+  confidence: ProposalConfidence;
+  evidence: ProposalEvidence[];
+  unsupportedClaims: ProposalUnsupportedClaim[];
+  sources: ProposalSource[];
 }
 
-// ─── API contract ─────────────────────────────────────────────────────────────
-
-export interface GenerateResponse {
+export interface GenerateReadyResponse {
+  status: "ready";
   proposal: Proposal;
   renderedText: string;
 }
+
+export interface GenerateClarificationResponse {
+  status: "needs_clarification";
+  summary: string;
+  questions: ClarificationQuestion[];
+}
+
+export type GenerateResponse =
+  | GenerateReadyResponse
+  | GenerateClarificationResponse;
 
 export type ErrorCode =
   | "INVALID_BODY"

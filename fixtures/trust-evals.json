@@ -1,0 +1,382 @@
+[
+  {
+    "id": "brochure-portfolio-refresh",
+    "category": "brochure",
+    "title": "Designer portfolio refresh",
+    "clientType": "international",
+    "dayRate": 120,
+    "requirement": "Need a clean portfolio website for my design studio with case studies and a contact form.",
+    "expectedClarificationIds": ["budget", "deadline", "user_scope"],
+    "clarificationAnswers": {
+      "budget": "$2k-$3k",
+      "deadline": "Within 4 weeks",
+      "user_scope": "1 admin editor",
+      "operating_region": "US",
+      "payment_flow": "No payments",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["mobile app", "marketplace", "native app"]
+  },
+  {
+    "id": "brochure-clinic-landing",
+    "category": "brochure",
+    "title": "Clinic landing site",
+    "clientType": "domestic",
+    "dayRate": 6000,
+    "requirement": "Need a website for a dental clinic in Mumbai with treatment pages, testimonials, appointment lead form, and WhatsApp click-to-chat. Budget under Rs 1.8 lakh. Launch in 5 weeks. One admin editor.",
+    "expectedClarificationIds": ["operating_region", "notification_volume"],
+    "clarificationAnswers": {
+      "operating_region": "India",
+      "notification_volume": "Low volume initially",
+      "payment_flow": "No payments",
+      "compliance_constraints": "No regulated patient data will be stored online"
+    },
+    "forbiddenTerms": ["subscription billing", "vendor marketplace", "mobile app"]
+  },
+  {
+    "id": "brochure-hotel-site",
+    "category": "brochure",
+    "title": "Boutique hotel website",
+    "clientType": "international",
+    "dayRate": 140,
+    "requirement": "Need a boutique hotel website with room pages, gallery, blog, and inquiry form. No direct booking engine for now. Launch before June 15. Budget around $4,000. 2 staff users. UK market.",
+    "expectedClarificationIds": [],
+    "forbiddenTerms": ["native mobile app", "ai chatbot", "marketplace"]
+  },
+  {
+    "id": "brochure-consultant-site",
+    "category": "brochure",
+    "title": "Consultant authority site",
+    "clientType": "international",
+    "dayRate": 110,
+    "requirement": "Need a website for my consulting business.",
+    "expectedClarificationIds": ["budget", "deadline", "user_scope"],
+    "clarificationAnswers": {
+      "budget": "$1.5k-$2k",
+      "deadline": "Flexible but ideally 3 weeks",
+      "user_scope": "1 admin",
+      "operating_region": "Canada",
+      "payment_flow": "No payments",
+      "compliance_constraints": "None"
+    },
+    "forbiddenTerms": ["marketplace", "checkout flow", "ios app"]
+  },
+  {
+    "id": "brochure-restaurant-site",
+    "category": "brochure",
+    "title": "Restaurant website",
+    "clientType": "domestic",
+    "dayRate": 5000,
+    "requirement": "Need a restaurant website with menu, reservations inquiry, event pages, and Instagram feed embed for a Pune restaurant. Budget Rs 90,000. Launch in 3 weeks. One manager and one staff user.",
+    "expectedClarificationIds": ["operating_region"],
+    "clarificationAnswers": {
+      "operating_region": "India",
+      "payment_flow": "No payments",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["multi-vendor marketplace", "subscription engine", "native app"]
+  },
+  {
+    "id": "booking-salon-booking",
+    "category": "booking",
+    "title": "Salon booking app",
+    "clientType": "domestic",
+    "dayRate": 7000,
+    "requirement": "Need a salon booking app with service list, staff calendar, online payments, and reminder messages for customers.",
+    "expectedClarificationIds": ["budget", "deadline", "notification_volume"],
+    "clarificationAnswers": {
+      "budget": "Rs 2.5-3.5 lakh",
+      "deadline": "Launch in 8 weeks",
+      "user_scope": "1 admin and 6 staff",
+      "operating_region": "India",
+      "payment_flow": "Collect one-time booking payments",
+      "notification_volume": "About 800 WhatsApp reminders per month",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["marketplace", "driver dispatch", "crypto payments"]
+  },
+  {
+    "id": "booking-physio-booking",
+    "category": "booking",
+    "title": "Physiotherapy booking portal",
+    "clientType": "international",
+    "dayRate": 150,
+    "requirement": "Need a patient booking portal for a physiotherapy clinic with therapist calendars, intake forms, online payments, and email reminders. Budget $7k-$9k. Launch in 10 weeks. 3 clinicians and 2 front-desk staff. US market. Around 400 reminders per month. HIPAA review required.",
+    "expectedClarificationIds": [],
+    "forbiddenTerms": ["public social feed", "multi-vendor marketplace", "iot device"]
+  },
+  {
+    "id": "booking-tutor-scheduler",
+    "category": "booking",
+    "title": "Tutor session scheduler",
+    "clientType": "international",
+    "dayRate": 120,
+    "requirement": "Need a booking system for online tutoring sessions with Zoom links and reminder emails.",
+    "expectedClarificationIds": ["budget", "deadline", "user_scope"],
+    "clarificationAnswers": {
+      "budget": "$4k-$5k",
+      "deadline": "6 weeks",
+      "user_scope": "2 admins, 10 tutors, 150 students",
+      "operating_region": "UK",
+      "payment_flow": "Invoices only, no in-app checkout",
+      "notification_volume": "Around 500 reminder emails per month",
+      "compliance_constraints": "GDPR applies"
+    },
+    "forbiddenTerms": ["native ios app", "marketplace", "warehouse dashboard"]
+  },
+  {
+    "id": "booking-visa-consult-booking",
+    "category": "booking",
+    "title": "Visa consultancy appointments",
+    "clientType": "international",
+    "dayRate": 130,
+    "requirement": "Need an appointment booking site for a visa consultancy with consultant slots, document checklist download, and lead capture. Budget about $3,500. Need launch in 5 weeks. 4 staff users. UAE market.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "No online payments in phase one",
+      "compliance_constraints": "No special compliance requirement known"
+    },
+    "forbiddenTerms": ["telemedicine", "marketplace", "native android app"]
+  },
+  {
+    "id": "booking-rental-demo-booking",
+    "category": "booking",
+    "title": "Rental demo booking",
+    "clientType": "domestic",
+    "dayRate": 6500,
+    "requirement": "Need a demo booking flow for industrial equipment rentals with lead capture, sales-team calendar, and SMS reminders. Budget Rs 4 lakh. Need a pilot in 7 weeks. 1 admin and 8 sales reps. India market. Around 1200 SMS reminders per month.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "No online checkout in the pilot",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["marketplace", "consumer loyalty app", "crypto payments"]
+  },
+  {
+    "id": "marketplace-artisan-marketplace",
+    "category": "marketplace",
+    "title": "Artisan goods marketplace",
+    "clientType": "international",
+    "dayRate": 180,
+    "requirement": "Need a marketplace for handmade goods with vendor onboarding, product listings, cart, payouts, and admin moderation.",
+    "expectedClarificationIds": ["budget", "deadline", "user_scope"],
+    "clarificationAnswers": {
+      "budget": "$18k-$25k",
+      "deadline": "12 weeks for MVP",
+      "user_scope": "2 admins, 40 sellers, and public buyers",
+      "operating_region": "US",
+      "payment_flow": "Marketplace checkout with seller payouts",
+      "compliance_constraints": "Standard privacy compliance only"
+    },
+    "forbiddenTerms": ["native game", "warehouse robotics", "medical record system"]
+  },
+  {
+    "id": "marketplace-used-equipment-market",
+    "category": "marketplace",
+    "title": "Used equipment marketplace",
+    "clientType": "international",
+    "dayRate": 170,
+    "requirement": "Need a B2B marketplace for used manufacturing equipment with listing approvals, inquiry flow, and escrow-style payments. Budget $22k. Need first release in Q3. 5 admin users. US and Canada market.",
+    "expectedClarificationIds": [],
+    "forbiddenTerms": ["restaurant booking", "native ios app", "social network"]
+  },
+  {
+    "id": "marketplace-job-board-pro",
+    "category": "marketplace",
+    "title": "Niche job board",
+    "clientType": "international",
+    "dayRate": 150,
+    "requirement": "Need a job board for remote design roles with employer accounts, paid job posts, and admin moderation. Budget $8k-$10k. Need launch in 9 weeks. 3 admins. UK market.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "Employers pay one-time listing fees online",
+      "compliance_constraints": "GDPR applies"
+    },
+    "forbiddenTerms": ["warehouse dashboard", "driver routing", "telemedicine"]
+  },
+  {
+    "id": "marketplace-b2b-leads-market",
+    "category": "marketplace",
+    "title": "B2B leads exchange",
+    "clientType": "domestic",
+    "dayRate": 8000,
+    "requirement": "Need a platform where logistics companies can buy verified freight leads. Need company accounts, wallet recharge, lead access controls, and admin review.",
+    "expectedClarificationIds": ["budget", "deadline", "operating_region"],
+    "clarificationAnswers": {
+      "budget": "Rs 8-10 lakh",
+      "deadline": "12 weeks",
+      "user_scope": "4 admins and up to 200 company accounts",
+      "operating_region": "India",
+      "payment_flow": "Wallet recharge and prepaid lead credits",
+      "compliance_constraints": "Standard business data only"
+    },
+    "forbiddenTerms": ["food delivery", "patient portal", "native ios app"]
+  },
+  {
+    "id": "marketplace-tutoring-market",
+    "category": "marketplace",
+    "title": "Tutoring marketplace",
+    "clientType": "international",
+    "dayRate": 165,
+    "requirement": "Need a tutoring marketplace where parents can find tutors, book trial calls, and manage package payments. Budget $15k. Need launch in 14 weeks. UK market. 2 admins and 60 tutors.",
+    "expectedClarificationIds": ["notification_volume"],
+    "clarificationAnswers": {
+      "payment_flow": "Parents buy packages online and tutors are paid offline at first",
+      "notification_volume": "About 700 email reminders and booking notifications per month",
+      "compliance_constraints": "GDPR applies"
+    },
+    "forbiddenTerms": ["inventory warehouse", "medical records", "crypto exchange"]
+  },
+  {
+    "id": "dashboard-sales-dashboard",
+    "category": "dashboard",
+    "title": "Sales reporting dashboard",
+    "clientType": "domestic",
+    "dayRate": 7500,
+    "requirement": "Need a dashboard that shows sales KPIs, lead funnels, and rep performance by region. Budget Rs 3 lakh. Need rollout in 6 weeks. 1 admin and 12 sales managers. India only.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "No payments",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["marketplace checkout", "native mobile app", "sms gateway"]
+  },
+  {
+    "id": "dashboard-warehouse-panel",
+    "category": "dashboard",
+    "title": "Warehouse operations panel",
+    "clientType": "international",
+    "dayRate": 155,
+    "requirement": "Need an internal dashboard for warehouse supervisors to track inbound loads, dispatch status, and exceptions. Budget $9k. Need launch in 8 weeks. 20 internal users. US market.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "No payments",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["public marketplace", "telemedicine", "consumer booking"]
+  },
+  {
+    "id": "dashboard-school-admin",
+    "category": "dashboard",
+    "title": "School admin dashboard",
+    "clientType": "international",
+    "dayRate": 145,
+    "requirement": "Need a school admin dashboard for attendance, fee status, and teacher announcements.",
+    "expectedClarificationIds": ["budget", "deadline", "user_scope"],
+    "clarificationAnswers": {
+      "budget": "$6k-$8k",
+      "deadline": "10 weeks",
+      "user_scope": "4 admins, 40 teachers, 1200 student records",
+      "operating_region": "Singapore",
+      "payment_flow": "Fee status visibility only, no online payments in this phase",
+      "notification_volume": "About 1000 email announcements per month",
+      "compliance_constraints": "No special compliance requirement known"
+    },
+    "forbiddenTerms": ["ride hailing", "vendor marketplace", "medical charting"]
+  },
+  {
+    "id": "dashboard-creator-analytics",
+    "category": "dashboard",
+    "title": "Creator analytics portal",
+    "clientType": "international",
+    "dayRate": 135,
+    "requirement": "Need a dashboard for creators to see campaign metrics, earnings, and invoice status. Budget $5k. Need launch in 7 weeks. 2 admins and 100 creator accounts. Europe market.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "Invoice tracking only, no checkout",
+      "compliance_constraints": "GDPR applies"
+    },
+    "forbiddenTerms": ["patient portal", "food delivery", "native game"]
+  },
+  {
+    "id": "dashboard-field-service",
+    "category": "dashboard",
+    "title": "Field service dashboard",
+    "clientType": "domestic",
+    "dayRate": 7000,
+    "requirement": "Need a dashboard for a home maintenance company to manage jobs, technicians, and daily status updates with WhatsApp alerts. Budget Rs 5 lakh. Need MVP in 9 weeks. 3 dispatch admins and 25 technicians. India market. Around 1500 WhatsApp notifications per month.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "Payments stay offline",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["marketplace checkout", "patient records", "native ios app"]
+  },
+  {
+    "id": "integration-crm-sync",
+    "category": "integration",
+    "title": "CRM and form sync",
+    "clientType": "international",
+    "dayRate": 160,
+    "requirement": "Need a system that syncs website leads into HubSpot, tags them by source, and alerts sales on Slack. Budget $4k. Need it live in 4 weeks. 6 internal users. US market.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "No payments",
+      "notification_volume": "Around 300 Slack alerts per month",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["native mobile app", "marketplace", "patient records"]
+  },
+  {
+    "id": "integration-payment-reconciliation",
+    "category": "integration",
+    "title": "Payment reconciliation portal",
+    "clientType": "domestic",
+    "dayRate": 9000,
+    "requirement": "Need an internal reconciliation dashboard that pulls payment gateway settlements, bank payouts, and invoice records. Budget Rs 7 lakh. Need launch in 10 weeks. 5 finance users. India market. Payment data involved.",
+    "expectedClarificationIds": ["payment_flow", "compliance_constraints"],
+    "clarificationAnswers": {
+      "payment_flow": "Internal reconciliation only, no customer checkout",
+      "compliance_constraints": "Need PCI-aware handling of payment data and audit logs"
+    },
+    "forbiddenTerms": ["hotel booking", "social feed", "native game"]
+  },
+  {
+    "id": "integration-whatsapp-hub",
+    "category": "integration",
+    "title": "WhatsApp support hub",
+    "clientType": "international",
+    "dayRate": 150,
+    "requirement": "Need a small support dashboard that pulls WhatsApp messages, auto-tags conversations, and creates tickets in Freshdesk.",
+    "expectedClarificationIds": ["budget", "deadline", "notification_volume"],
+    "clarificationAnswers": {
+      "budget": "$6k-$7k",
+      "deadline": "8 weeks",
+      "user_scope": "10 support agents and 2 admins",
+      "operating_region": "UK",
+      "payment_flow": "No payments",
+      "notification_volume": "About 5000 WhatsApp conversations per month",
+      "compliance_constraints": "GDPR applies"
+    },
+    "forbiddenTerms": ["marketplace checkout", "patient records", "warehouse routing"]
+  },
+  {
+    "id": "integration-ai-support-triage",
+    "category": "integration",
+    "title": "AI support triage",
+    "clientType": "international",
+    "dayRate": 175,
+    "requirement": "Need an internal support triage tool that classifies email and chat tickets, drafts replies, and hands off to Zendesk. Budget $12k. Need beta in 9 weeks. 25 agents. US market.",
+    "expectedClarificationIds": ["payment_flow", "notification_volume"],
+    "clarificationAnswers": {
+      "payment_flow": "No payments",
+      "notification_volume": "Around 7000 inbound messages per month",
+      "compliance_constraints": "No regulated industry requirement confirmed"
+    },
+    "forbiddenTerms": ["marketplace", "school dashboard", "native game"]
+  },
+  {
+    "id": "integration-multi-vendor-sync",
+    "category": "integration",
+    "title": "ERP and storefront sync",
+    "clientType": "domestic",
+    "dayRate": 9500,
+    "requirement": "Need a backend sync layer that pulls products from ERP, updates Shopify stock, and pushes orders to fulfillment tools. Budget Rs 9 lakh. Need launch in 12 weeks. 8 internal ops users. India market.",
+    "expectedClarificationIds": ["payment_flow"],
+    "clarificationAnswers": {
+      "payment_flow": "Existing checkout stays in Shopify",
+      "compliance_constraints": "None known"
+    },
+    "forbiddenTerms": ["patient portal", "ride hailing", "native ios app"]
+  }
+]

@@ -1,20 +1,29 @@
 "use client";
 
 import { formatCurrencyAmount } from "@/lib/domain/proposal/currency";
-import type { ProposalPricing } from "@/lib/domain/proposal/schema";
+import type { ConfidenceLevel, ProposalPricing } from "@/lib/domain/proposal/schema";
 import { SectionCard } from "./shared";
 
 export function PricingSection({
   pricing,
   id,
+  confidenceLevel,
+  confidenceReason,
 }: {
   pricing: ProposalPricing;
   id?: string;
+  confidenceLevel?: ConfidenceLevel;
+  confidenceReason?: string;
 }) {
   const isRange = pricing.totalMin !== pricing.totalMax;
 
   return (
-    <SectionCard title="Pricing Estimate" id={id}>
+    <SectionCard
+      title="Pricing Estimate"
+      id={id}
+      confidenceLevel={confidenceLevel}
+      confidenceReason={confidenceReason}
+    >
       <div className="pricing-total">
         <span className="pricing-amount">
           {isRange
@@ -22,6 +31,10 @@ export function PricingSection({
             : formatCurrencyAmount(pricing.totalMin, pricing.currency)}
         </span>
         <span className="pricing-currency">{pricing.currency}</span>
+      </div>
+
+      <div className="estimate-note">
+        This is a directional estimate, not a fixed quote.
       </div>
 
       <div className="pricing-modules">

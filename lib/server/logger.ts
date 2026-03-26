@@ -34,6 +34,11 @@ export interface RequestLog {
   repairUsed:            boolean;
   failureClass:          ErrorCode | "RATE_LIMITED" | null;
   status:                number;
+  clarificationIssued?:  boolean;
+  clarificationCount?:   number;
+  sourceCount?:          number;
+  unsupportedClaimCount?: number;
+  sourceDomainQuality?:  "strong" | "mixed" | "weak" | null;
   parseFailReason?:      string;
   validationFailReason?: string;
   repairFailReason?:     string;

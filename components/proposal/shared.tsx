@@ -1,22 +1,37 @@
 "use client";
 
 import React from "react";
+import type { ConfidenceLevel } from "@/lib/domain/proposal/schema";
 
 export function SectionCard({
   title,
   id,
+  confidenceLevel,
+  confidenceReason,
   children,
 }: {
   title: string;
   id?: string;
+  confidenceLevel?: ConfidenceLevel;
+  confidenceReason?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="section-card" id={id}>
       <div className="section-header">
         <span className="section-label">{title}</span>
+        {confidenceLevel && (
+          <span className={`confidence-pill confidence-pill--${confidenceLevel}`}>
+            {confidenceLevel}
+          </span>
+        )}
       </div>
-      <div className="section-body">{children}</div>
+      <div className="section-body">
+        {confidenceReason && (
+          <p className="confidence-reason">{confidenceReason}</p>
+        )}
+        {children}
+      </div>
     </div>
   );
 }

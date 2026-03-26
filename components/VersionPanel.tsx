@@ -6,11 +6,23 @@ interface VersionPanelProps {
   onClose: () => void;
 }
 
-const VERSION = "1.5.0";
+const VERSION = "1.6.0";
 const STATUS = "BETA";
-const DATE = "2026-03-25";
+const DATE = "2026-03-26";
 
 const CHANGELOG: { version: string; date: string; entries: string[] }[] = [
+  {
+    version: "1.6.0",
+    date: "2026-03-26",
+    entries: [
+      "Proposal generation now stops for vague briefs and returns structured clarification questions before drafting",
+      "Trust-first draft output separates verified facts, unsupported claims, assumptions, and confidence scoring instead of pretending certainty",
+      "Web research was split into its own stage so vendor pricing and external platform facts can be attached to sources",
+      "Numeric client-borne vendor costs now require source metadata or they are downgraded to a non-numeric verification placeholder",
+      "The UI now shows trust summary, evidence, uncertainty, source-backed client costs, and section-level confidence badges",
+      "Trust evaluation coverage was added with unit tests, flow tests, a 25-fixture benchmark set, and a batch evaluation script",
+    ],
+  },
   {
     version: "1.5.0",
     date: "2026-03-25",
@@ -59,7 +71,7 @@ const STACK = [
   { layer: "Framework", value: "Next.js 16 - App Router" },
   { layer: "Language", value: "TypeScript 5" },
   { layer: "Styling", value: "Tailwind CSS 3 + custom CSS tokens" },
-  { layer: "Model", value: "Groq - llama-3.3-70b-versatile" },
+  { layer: "Model", value: "Groq - llama-3.3-70b-versatile + compound-mini research" },
   { layer: "Validation", value: "Zod 3" },
   { layer: "Rate limit", value: "Upstash Redis - sliding window" },
   { layer: "Fonts", value: "Fraunces + DM Sans + DM Mono" },

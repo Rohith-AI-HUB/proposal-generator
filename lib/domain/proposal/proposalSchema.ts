@@ -1,37 +1,36 @@
 // Runtime schema for model output validation and normalization.
 // Single source of validation truth: structural, type-level, and semantic rules
-// all live here. The handwritten validator.ts is replaced by this.
-//
-// Transforms are applied during parse so the output is already normalized:
-// strings trimmed, blank items filtered, numbers clamped, totalDays derived
-// from phase sums. Callers receive a clean Proposal with no further processing.
+// all live here. Callers receive a clean Proposal with no further processing.
 
 import { z } from "zod";
 import { PRICING_GUARDRAILS, TIMELINE_GUARDRAILS } from "./constants";
 
+const NUMERIC_COST_PATTERN = /\d|%/;
+
 // --- Reusable field primitives -----------------------------------------------
 
-// Trims whitespace. Does not enforce non-empty (use nonEmptyStr where needed).
 const trimmedStr = z.string().transform((s) => s.trim());
 
-// Trims and rejects empty strings.
 const nonEmptyStr = z
   .string()
   .transform((s) => s.trim())
   .refine((s) => s.length > 0, { message: "must not be empty" });
 
-// Array of strings: trims each item, filters out blank strings.
+const nullableTrimmed = z
+  .union([z.string(), z.null()])
+  .nullable()
+  .transform((v) => (v == null || v.trim() === "" ? null : v.trim()));
+
 const strArray = z
   .array(z.string())
+  .default([])
   .transform((arr) => arr.map((s) => s.trim()).filter((s) => s.length > 0));
 
-// Integer within [min, max]. Rounds floats. Clamps out-of-range values.
 function clampedInt(min: number, max: number) {
   return z
     .number()
     .transform((n) => Math.round(Math.min(Math.max(n, min), max)));
 }
-
 
 // --- Nested schemas ----------------------------------------------------------
 
@@ -41,10 +40,7 @@ const TimelinePhaseSchema = z.object({
     TIMELINE_GUARDRAILS.minDaysPerPhase,
     TIMELINE_GUARDRAILS.maxDaysPerPhase
   ),
-  notes: z
-    .union([z.string(), z.null()])
-    .nullable()
-    .transform((v) => (v == null || v.trim() === "" ? null : v.trim())),
+  notes: nullableTrimmed,
 });
 
 const PricingModuleSchema = z.object({
@@ -53,15 +49,85 @@ const PricingModuleSchema = z.object({
   cost: nonEmptyStr,
 });
 
-const ClientCostItemSchema = z.object({
-  item: nonEmptyStr,
-  category: nonEmptyStr,
-  estimatedCost: nonEmptyStr,
-  mandatory: z.boolean(),
-  notes: z
-    .union([z.string(), z.null()])
-    .nullable()
-    .transform((v) => (v == null || v.trim() === "" ? null : v.trim())),
+const ClientCostItemSchema = z
+  .object({
+    item: nonEmptyStr,
+    category: nonEmptyStr,
+    estimatedCost: nonEmptyStr,
+    mandatory: z.boolean(),
+    notes: nullableTrimmed.optional().default(null),
+    sourceTitle: nullableTrimmed.optional().default(null),
+    sourceUrl: nullableTrimmed.optional().default(null),
+    sourceRationale: nullableTrimmed.optional().default(null),
+    confidence: z.enum(["high", "medium", "low"]).default("low"),
+  })
+  .superRefine((cost, ctx) => {
+    const hasNumericCost = NUMERIC_COST_PATTERN.test(cost.estimatedCost);
+    const hasSourceMeta =
+      !!cost.sourceTitle && !!cost.sourceUrl && !!cost.sourceRationale;
+
+    if (hasNumericCost && !hasSourceMeta) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "numeric client costs require sourceTitle, sourceUrl, and sourceRationale",
+      });
+    }
+  });
+
+const ProposalSourceSchema = z.object({
+  title: nonEmptyStr,
+  url: nonEmptyStr,
+  snippet: nullableTrimmed,
+});
+
+const ProposalEvidenceSchema = z.object({
+  claim: nonEmptyStr,
+  section: z.enum([
+    "overview",
+    "scope",
+    "deliverables",
+    "timeline",
+    "pricing",
+    "clientCosts",
+    "techStack",
+    "boundaries",
+    "risks",
+    "assumptions",
+    "nextSteps",
+  ]),
+  sourceTitle: nonEmptyStr,
+  sourceUrl: nonEmptyStr,
+  sourceRationale: nonEmptyStr,
+});
+
+const UnsupportedClaimSchema = z.object({
+  claim: nonEmptyStr,
+  reason: nonEmptyStr,
+});
+
+const SectionConfidenceSchema = z.object({
+  section: z.enum([
+    "overview",
+    "scope",
+    "deliverables",
+    "timeline",
+    "pricing",
+    "clientCosts",
+    "techStack",
+    "boundaries",
+    "risks",
+    "assumptions",
+    "nextSteps",
+  ]),
+  level: z.enum(["high", "medium", "low"]),
+  reason: nonEmptyStr,
+});
+
+const ProposalConfidenceSchema = z.object({
+  overall: z.enum(["high", "medium", "low"]).default("low"),
+  note: nonEmptyStr.default("This draft contains estimates and should be reviewed."),
+  sections: z.array(SectionConfidenceSchema).default([]),
 });
 
 const TechChoiceSchema = z.object({
@@ -74,16 +140,12 @@ const TechChoiceSchema = z.object({
 
 export const ProposalSchema = z
   .object({
-    // Overview ----------------------------------------------------------------
     overview: z
       .object({
         summary: nonEmptyStr,
         outcome: nonEmptyStr,
         feasibility: z.enum(["green", "amber", "orange", "red"]),
-        feasibilityNote: z
-          .union([z.string(), z.null()])
-          .nullable()
-          .transform((v) => (v == null || v.trim() === "" ? null : v.trim())),
+        feasibilityNote: nullableTrimmed,
       })
       .refine(
         (ov) =>
@@ -97,27 +159,19 @@ export const ProposalSchema = z
           path: ["feasibilityNote"],
         }
       ),
-
-    // Scope -------------------------------------------------------------------
     scope: z.object({
       core: strArray.refine((arr) => arr.length >= 1, {
         message: "scope.core must contain at least one item",
       }),
       extended: strArray,
     }),
-
-    // Deliverables ------------------------------------------------------------
     deliverables: strArray,
-
-    // Timeline ----------------------------------------------------------------
-    // totalDays from the model is IGNORED and re-derived from phase sums.
-    // This prevents the model from reporting a total that contradicts its phases.
     timeline: z
       .object({
         phases: z
           .array(TimelinePhaseSchema)
           .min(1, "timeline must have at least one phase"),
-        totalDays: z.number().optional(), // accepted but overwritten below
+        totalDays: z.number().optional(),
         dependencies: strArray,
       })
       .transform((tl) => {
@@ -131,8 +185,6 @@ export const ProposalSchema = z
           dependencies: tl.dependencies,
         };
       }),
-
-    // Pricing -----------------------------------------------------------------
     pricing: z
       .object({
         totalMin: clampedInt(
@@ -147,13 +199,10 @@ export const ProposalSchema = z
         modules: z
           .array(PricingModuleSchema)
           .min(1, "pricing must have at least 1 module"),
-        rationale: z
-          .string()
-          .trim()
-          .refine((s) => s.length >= 30, {
-            message:
-              "pricing.rationale must be at least 30 characters (not a placeholder)",
-          }),
+        rationale: z.string().trim().refine((s) => s.length >= 30, {
+          message:
+            "pricing.rationale must be at least 30 characters (not a placeholder)",
+        }),
         valueJustification: nonEmptyStr,
         variabilityNote: nonEmptyStr,
       })
@@ -161,15 +210,29 @@ export const ProposalSchema = z
         message: "pricing.totalMax must be >= totalMin",
         path: ["totalMax"],
       }),
-
-    // Flat arrays -------------------------------------------------------------
     clientCosts: z.array(ClientCostItemSchema).default([]),
-    techStack: z.array(TechChoiceSchema),
+    techStack: z.array(TechChoiceSchema).default([]),
     boundaries: strArray,
     risks: strArray,
     assumptions: strArray,
     nextSteps: strArray,
+    confidence: ProposalConfidenceSchema.default({
+      overall: "low",
+      note: "This draft contains estimates and should be reviewed.",
+      sections: [],
+    }),
+    evidence: z.array(ProposalEvidenceSchema).default([]),
+    unsupportedClaims: z.array(UnsupportedClaimSchema).default([]),
+    sources: z.array(ProposalSourceSchema).default([]),
+  })
+  .superRefine((proposal, ctx) => {
+    if (proposal.confidence.overall !== "high" && proposal.assumptions.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["assumptions"],
+        message: "assumptions are required when confidence is not high",
+      });
+    }
   });
 
-// Inferred output type. Compatible with the Proposal interface in schema.ts.
 export type ParsedProposal = z.output<typeof ProposalSchema>;
