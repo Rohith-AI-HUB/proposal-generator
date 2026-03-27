@@ -1,5 +1,9 @@
 import { formatCurrencyAmount } from "@/lib/domain/proposal/currency";
-import type { Proposal } from "@/lib/domain/proposal/schema";
+import type { Proposal, ReplyDraft } from "@/lib/domain/proposal/schema";
+
+export function renderReplyDraftText(draft: ReplyDraft): string {
+  return draft.finalProposal;
+}
 
 export function renderProposalText(p: Proposal): string {
   const lines: string[] = [];

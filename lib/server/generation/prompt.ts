@@ -1,176 +1,117 @@
-// Composable prompt builders. Each part is a named function.
-// buildSystemPrompt() assembles the final prompt from these parts.
-// Nothing is hard-coded in route.ts or model.ts.
+import type { DraftMode, ProofPack } from "@/lib/domain/proposal/schema";
 
-import type { RequirementSignals } from "./preprocessor";
-import type { ResearchPacket } from "./research";
-
-// --- Pricing context ---------------------------------------------------------
-// Passed in from the route layer. Drives all cost calculations.
-
+// Legacy export kept so older unused modules still type-check.
 export interface PricingContext {
-  dayRate: number;         // Freelancer's day rate (integer, in the chosen currency)
+  dayRate: number;
   clientType: "domestic" | "international";
   currency: "INR" | "USD";
-  currencySymbol: string;  // "₹" or "$"
+  currencySymbol: string;
 }
-
-// --- Parts -------------------------------------------------------------------
 
 function rolePreamble(): string {
-  return `You are a senior freelance software consultant preparing a first-draft proposal.
-The draft will be reviewed by the freelancer before it is sent to the client.
-Write clearly, directly, and honestly. Do not bluff.`;
+  return `You rewrite Upwork proposals for solo React and Next.js freelancers.
+Your only job is to improve the chance of getting a client reply.
+
+You are not writing a project plan, a scope doc, or a consulting memo.
+You are writing proposal copy that sounds specific, credible, and easy to reply to.`;
 }
 
-function outputContract(currency: string): string {
-  return `--------------------------------
-OUTPUT FORMAT -- STRICT
---------------------------------
-
-Return ONLY a single raw JSON object. No markdown fences. No prose before or after.
-The JSON must exactly match this structure:
+function outputContract(): string {
+  return `Return ONLY a raw JSON object with this exact shape:
 
 {
-  "overview": {
-    "summary": string,
-    "outcome": string,
-    "feasibility": "green" | "amber" | "orange" | "red",
-    "feasibilityNote": string | null
-  },
-  "scope": {
-    "core": string[],
-    "extended": string[]
-  },
-  "deliverables": string[],
-  "timeline": {
-    "phases": [{ "name": string, "days": number, "notes": string | null }],
-    "totalDays": number,
-    "dependencies": string[]
-  },
-  "pricing": {
-    "totalMin": number,
-    "totalMax": number,
-    "currency": "${currency}",
-    "modules": [{ "module": string, "rationale": string, "cost": string }],
-    "rationale": string,
-    "valueJustification": string,
-    "variabilityNote": string
-  },
-  "clientCosts": [
-    {
-      "item": string,
-      "category": string,
-      "estimatedCost": string,
-      "mandatory": boolean,
-      "notes": string | null,
-      "sourceTitle": string | null,
-      "sourceUrl": string | null,
-      "sourceRationale": string | null,
-      "confidence": "high" | "medium" | "low"
-    }
-  ],
-  "techStack": [{ "layer": string, "choice": string, "reason": string }],
-  "boundaries": string[],
-  "risks": string[],
-  "assumptions": string[],
-  "nextSteps": string[]
+  "mode": "quick_reply" | "full_proposal",
+  "finalProposal": string,
+  "matchedProof": string,
+  "hookOptions": [
+    { "rank": 1, "hook": string, "rationale": string },
+    { "rank": 2, "hook": string, "rationale": string },
+    { "rank": 3, "hook": string, "rationale": string }
+  ]
 }`;
 }
 
-function feasibilityRules(): string {
-  return `--------------------------------
-FEASIBILITY SCORING
---------------------------------
+function writingRules(): string {
+  return `Rules:
+- Optimize for replies, not completeness.
+- The proposal must contain:
+  1. the exact pain from the post
+  2. one relevant proof point
+  3. one concrete way you would attack the problem
+  4. one narrow question
+- The first line must sound specific to this client's job, not reusable across ten jobs.
+- Pick exactly one proof point from the freelancer's proof pack and use it.
+- finalProposal must end with one direct question.
+- hookOptions must be ranked best to worst: 1, 2, 3.
+- Each hook must stay under 140 characters.
+- Mention the portfolio URL only if it strengthens credibility without wasting the opening.
 
-GREEN  -> Scope and constraints aligned. feasibilityNote: null.
-AMBER  -> Minor tension. One sentence in feasibilityNote. Reflect in timeline/pricing.
-ORANGE -> Real conflict (scope vs budget or deadline).
-         feasibilityNote: state conflict, offer Option A (reduced scope) and Option B (revised constraints).
-         End with: "Recommended: Option [A/B] because [one specific reason]."
-RED    -> Not feasible as described.
-         Open with: "This project is not feasible as described."
-         Only offer a reduced-scope path if one genuinely exists.`;
+Never use:
+- broad business fluff
+- "I am interested in your project"
+- "I have read your job description"
+- "Dear client"
+- "I can do this"
+- "I'd love to help"
+- "AI-powered"
+- generic audit or process talk
+- vague CTAs like "tell me more" or "share more"
+
+quick_reply rules:
+- mode must be "quick_reply"
+- finalProposal must be a single paragraph
+- finalProposal must stay under 700 characters
+- Compress pain, proof, attack line, and question into one tight block
+
+full_proposal rules:
+- mode must be "full_proposal"
+- finalProposal must be 2 to 4 short paragraphs
+- finalProposal must stay under 1500 characters
+- It can breathe more than quick_reply, but it is still an Upwork proposal, not a report
+- Do not add pricing, timeline, scope tables, or extra sections
+
+shared structure:
+1. A sharp opening tied to the client's pain, urgency, or hidden risk.
+2. One proof line that makes the freelancer believable.
+3. One concrete attack line showing how you would handle this specific problem.
+4. One direct question that makes replying easy.
+
+Do not use bullets, headings, markdown, or placeholders in finalProposal.
+Do not explain the whole job.
+Do not mention pricing, timelines, assumptions, sources, confidence, or deliverables.
+Do not bluff experience that is not supported by the proof pack.`;
 }
 
-function contentRules(pricingCtx: PricingContext): string {
-  const { dayRate, currency, currencySymbol } = pricingCtx;
-
-  return `--------------------------------
-CONTENT RULES
---------------------------------
-
-overview.summary: 2-4 sentences. Professional reframe of the requirement around client outcome.
-overview.outcome: 1 sentence. "This draft is intended to help [who] achieve [outcome]."
-scope.core: Phase 1 must-haves only. No speculation.
-scope.extended: Phase 2 nice-to-haves. Empty array if not applicable.
-deliverables: Exact outputs. No vague line items like "complete application."
-timeline.phases: Build in 15-20% buffer per phase for review cycles.
-timeline.dependencies: External blockers only. Empty array if none.
-
-PRICING -- CRITICAL RULES:
-  Freelancer day rate provided: ${currencySymbol}${dayRate} ${currency}/day.
-  You MUST use this rate as the ONLY basis for all cost calculations. Do NOT invent numbers.
-
-  FORMULA:
-    Phase cost     = phase.days x ${dayRate}
-    totalMin       = sum of all phase costs (no buffer)
-    totalMax       = totalMin x 1.25 (round to nearest integer, 25% scope buffer)
-
-  pricing.modules: EXACTLY one entry per timeline phase. Each cost field MUST show the
-    calculation explicitly, e.g. "18 days x ${currencySymbol}${dayRate} = ${currencySymbol}${18 * dayRate}".
-    Name at least 1 real cost driver (auth complexity, integrations,
-    real-time features, third-party APIs, testing effort, custom logic, mobile support).
-  pricing.currency: Always "${currency}". Do not change this.
-  pricing.rationale: 2-3 sentences. Reference actual phase days and rate from THIS project.
-  pricing.valueJustification: 1 sentence. What does this protect or enable long-term?
-  pricing.variabilityNote: 1 sentence. What could shift the final estimate up or down?
-
-techStack: Return [] unless the requirement explicitly implies a technical constraint, platform requirement,
-  legacy stack, real-time need, native app need, or integration that justifies a concrete stack choice.
-  When used, justify each choice against a specific need in THIS project.
-  Correct: "Next.js -- required here for server-side rendering of dynamic booking pages."
-  Wrong:   "Next.js -- great for modern web apps."
-clientCosts: List every tool, API, platform, or subscription the client must pay for directly.
-  This section is separate from the freelancer's fee. Do NOT include freelancer cost here.
-  Mandatory items: anything the project cannot go live without.
-  Categories to consider (include only what applies): Hosting, Domain, Payment Gateway,
-    SMS / OTP Service, Email Delivery, Maps API, CDN, Cloud Storage, SSL Certificate,
-    Push Notifications, Analytics, Customer Support SaaS, AI/LLM API.
-  For estimatedCost: use real approximate figures (e.g. "~${currencySymbol}800/month", "2% + ${currencySymbol}3 per transaction",
-    "Free tier available; paid from ~$20/month"). If unknown, write "Varies - check vendor pricing."
-  sourceTitle / sourceUrl / sourceRationale: include them only when the client cost is grounded in verified research.
-    If the cost is a placeholder or usage-based guess, set all three to null and set confidence to "low".
-  Return [] when direct client-borne costs are not identifiable from the requirement. Do NOT invent filler.
-boundaries: What is NOT covered. Specific, not generic disclaimers.
-risks: 1-3 items specific to this project. Empty array if none.
-assumptions: Only what materially affects cost, timeline, or scope.
-nextSteps: Clear actions for the client.
-
-HARD RULES:
-- No filler adjectives: seamless, robust, scalable, cutting-edge, powerful
-- No invented features not implied by the requirement
-- No repeated information across fields
-- No placeholders left in the output
-- If input is vague -> stay minimal, do not invent scope
-- If input is contradictory -> interpret, constrain, note the assumption
-- Timeline and pricing are estimates, not commitments. Phrase them accordingly.
-- Do not present current vendor pricing, platform limits, or market facts as certain unless grounded in the verified research context
-- If verified research is missing or weak, say so explicitly in assumptions or risks instead of bluffing
-- Prefer reduced-scope options over false certainty when feasibility is orange or red`;
+export function buildSystemPrompt(_pricingCtx?: PricingContext): string {
+  void _pricingCtx;
+  return [rolePreamble(), outputContract(), writingRules()].join("\n\n");
 }
 
-function outputReminder(): string {
-  return `Output ONLY the JSON object. Nothing before it. Nothing after it.
-Any non-JSON output will cause a parse failure.`;
-}
+export function buildUserMessage(
+  jobPost: string,
+  proofPack: ProofPack,
+  mode: DraftMode
+): string {
+  const proofPoints = proofPack.proofPoints
+    .map((point, index) => `${index + 1}. ${point}`)
+    .join("\n");
 
-// --- Repair prompt -----------------------------------------------------------
-//
-// Sent as the user message on a single repair retry when the first response
-// fails JSON parse or schema validation. Keeps the same system prompt so the
-// model retains its role and output contract. The repair message is intentionally
-// terse: show the model exactly what broke and what to fix. No re-explanation.
+  return `Freelancer profile:
+- Specialty: ${proofPack.specialty}
+- Proof points:
+${proofPoints}
+- Portfolio URL: ${proofPack.portfolioUrl}
+
+Upwork job post:
+${jobPost}
+
+Output goals:
+- Requested mode: ${mode}
+- Extract the strongest client pain or buyer fear from this post.
+- Match it to the most relevant proof point.
+- Write three ranked opening hooks.
+- Write one ${mode === "quick_reply" ? "single-paragraph quick reply" : "full proposal with 2 to 4 short paragraphs"} that can be pasted into Upwork immediately.`;
+}
 
 export function buildRepairMessage(rawOutput: string, failureReason: string): string {
   return `The previous output failed validation with this error:
@@ -181,103 +122,5 @@ Your previous output was:
 
 ${rawOutput}
 
-Fix the output so it passes validation. Return ONLY a valid JSON object matching the required schema. Nothing before it. Nothing after it.`;
-}
-
-// --- Assembler ---------------------------------------------------------------
-
-export function buildSystemPrompt(pricingCtx: PricingContext): string {
-  return [
-    rolePreamble(),
-    outputContract(pricingCtx.currency),
-    feasibilityRules(),
-    contentRules(pricingCtx),
-    outputReminder(),
-  ].join("\n\n");
-}
-
-export function buildUserMessage(
-  requirement: string,
-  pricingCtx: PricingContext,
-  signals?: RequirementSignals,
-  research?: ResearchPacket | null,
-): string {
-  const lines: string[] = [`Client Requirement:\n\n${requirement}`];
-
-  lines.push("\n[CONTEXT SIGNALS -- calibrate feasibility, assumptions, and warnings accordingly]");
-
-  lines.push(
-    `- Client type: ${pricingCtx.clientType === "domestic" ? "Domestic (India)" : "International"}`
-  );
-  lines.push(
-    `- Freelancer day rate: ${pricingCtx.currencySymbol}${pricingCtx.dayRate} ${pricingCtx.currency}/day. ` +
-    `Use this as the ONLY basis for all cost calculations. All pricing.modules[].cost fields must show explicit math.`
-  );
-
-  if (signals) {
-    if (!signals.hasBudget) {
-      lines.push("- Budget: NOT mentioned. Do NOT assume a fixed budget. Add to assumptions: 'Client has not specified a budget -- pricing is an estimate based on typical project scope.'");
-    } else if (signals.extractedBudget) {
-      lines.push(`- Budget: Mentioned ("${signals.extractedBudget}"). Use this to calibrate feasibility. If scope exceeds this, set feasibility to orange or red.`);
-    }
-
-    if (!signals.hasDeadline) {
-      lines.push("- Deadline: NOT mentioned. Do not invent a launch date. Propose a realistic timeline without deadline pressure.");
-    } else if (signals.extractedDeadline) {
-      lines.push(`- Deadline: Mentioned ("${signals.extractedDeadline}"). Assess if this is realistic for the scope. If not, reflect in feasibility.`);
-    }
-
-    if (signals.isVague) {
-      lines.push(`- Scope specificity: LOW (${signals.wordCount} words). Stay minimal. Do not invent features. Add to assumptions: 'Exact feature scope requires client confirmation before development begins.'`);
-    } else {
-      lines.push(`- Scope specificity: ${signals.specificity.toUpperCase()} (${signals.wordCount} words).`);
-    }
-
-    if (signals.hasBudgetTimelineConflict) {
-      lines.push("- Conflict detected: Large scope vocabulary combined with a tight deadline. Set feasibility to orange or red. Explain the tension explicitly in feasibilityNote.");
-    }
-  }
-
-  if (research) {
-    lines.push("\n[VERIFIED RESEARCH -- use this for factual claims and client-borne costs]");
-    lines.push(`- Research quality: ${research.dataQuality.toUpperCase()}. ${research.caveat}`);
-    lines.push(`- Research summary: ${research.summary}`);
-
-    if (research.evidence.length > 0) {
-      research.evidence.forEach((item) =>
-        lines.push(`- Verified ${item.section} fact: ${item.claim} (source rationale: ${item.sourceRationale})`)
-      );
-    } else {
-      lines.push("- Verified fact coverage: sparse. Keep factual claims minimal.");
-    }
-
-    if (research.vendorCosts.length > 0) {
-      research.vendorCosts.forEach((cost) => {
-        const note = cost.notes ? ` (${cost.notes})` : "";
-        lines.push(
-          `- Verified client cost [${cost.confidence.toUpperCase()}]: ${cost.category} -- ${cost.item} -- ${cost.estimatedCost}${note}`
-        );
-      });
-    } else {
-      lines.push("- Verified client costs: none confirmed. Use \"Varies - verify current vendor pricing.\" where needed.");
-    }
-
-    if (research.openQuestions.length > 0) {
-      research.openQuestions.forEach((question) =>
-        lines.push(`- Research gap: ${question}`)
-      );
-    }
-
-    if (research.sources.length > 0) {
-      lines.push("- Sources consulted:");
-      research.sources.forEach((source) =>
-        lines.push(`  - ${source.title} | ${source.url}`)
-      );
-    }
-  } else {
-    lines.push("\n[RESEARCH STATUS]");
-    lines.push("- Live web research was unavailable for this run. Avoid strong factual claims about current vendor pricing or platform limits.");
-  }
-
-  return lines.join("\n");
+Fix the output so it passes validation. Return ONLY a valid JSON object matching the required schema.`;
 }

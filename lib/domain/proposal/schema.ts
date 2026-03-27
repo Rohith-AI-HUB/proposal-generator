@@ -131,9 +131,30 @@ export interface Proposal {
   sources: ProposalSource[];
 }
 
+export interface ProofPack {
+  specialty: string;
+  proofPoints: string[];
+  portfolioUrl: string;
+}
+
+export type DraftMode = "quick_reply" | "full_proposal";
+
+export interface HookOption {
+  rank: 1 | 2 | 3;
+  hook: string;
+  rationale: string;
+}
+
+export interface ReplyDraft {
+  mode: DraftMode;
+  finalProposal: string;
+  hookOptions: HookOption[];
+  matchedProof: string;
+}
+
 export interface GenerateReadyResponse {
   status: "ready";
-  proposal: Proposal;
+  draft: ReplyDraft;
   renderedText: string;
 }
 
@@ -144,8 +165,7 @@ export interface GenerateClarificationResponse {
 }
 
 export type GenerateResponse =
-  | GenerateReadyResponse
-  | GenerateClarificationResponse;
+  | GenerateReadyResponse;
 
 export type ErrorCode =
   | "INVALID_BODY"

@@ -1,107 +1,124 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ProposalView } from "@/components/proposal/ProposalView";
 import type {
-  ClarificationQuestion,
+  DraftMode,
   GenerateErrorResponse,
   GenerateResponse,
-  Proposal,
+  ProofPack,
+  ReplyDraft,
 } from "@/lib/domain/proposal/schema";
-import type { ClarificationAnswers } from "@/lib/domain/proposal/clarifications";
 import { MAX_REQUIREMENT_LENGTH } from "@/lib/domain/proposal/constants";
-import { computeWarnings, type InputWarning } from "@/lib/domain/proposal/warnings";
-import { VersionPanel } from "@/components/VersionPanel";
 
-type ClientType = "domestic" | "international";
+const STORAGE_KEY = "proposaiq-proof-pack-v1";
+const DEFAULT_PURCHASE_URL =
+  "mailto:rohithbrock9164@gmail.com?subject=Reply%20Sprint%20Pack%20-%20%2429";
 
-const DEFAULT_RATES: Record<ClientType, number> = {
-  domestic: 5000,
-  international: 100,
+const EMPTY_PROOF_PACK: ProofPack = {
+  specialty: "",
+  proofPoints: ["", "", ""],
+  portfolioUrl: "",
 };
 
-const CURRENCY_LABELS: Record<ClientType, string> = {
-  domestic: "INR (Rs)",
-  international: "USD ($)",
-};
+function normalizeProofPack(raw: unknown): ProofPack {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return EMPTY_PROOF_PACK;
+  }
 
-const CURRENCY_SYMBOLS: Record<ClientType, string> = {
-  domestic: "Rs",
-  international: "$",
-};
+  const value = raw as Record<string, unknown>;
+  const proofPoints = Array.isArray(value.proofPoints)
+    ? value.proofPoints
+        .filter((item): item is string => typeof item === "string")
+        .slice(0, 3)
+    : [];
+
+  while (proofPoints.length < 3) {
+    proofPoints.push("");
+  }
+
+  return {
+    specialty: typeof value.specialty === "string" ? value.specialty : "",
+    proofPoints,
+    portfolioUrl:
+      typeof value.portfolioUrl === "string" ? value.portfolioUrl : "",
+  };
+}
 
 export default function HomePage() {
-  const [requirement, setRequirement] = useState("");
-  const [clientType, setClientType] = useState<ClientType>("international");
-  const [dayRate, setDayRate] = useState<string>("");
-  const [proposal, setProposal] = useState<Proposal | null>(null);
+  const builderRef = useRef<HTMLDivElement>(null);
+  const purchaseUrl =
+    process.env.NEXT_PUBLIC_REPLY_SPRINT_URL ?? DEFAULT_PURCHASE_URL;
+
+  const [jobPost, setJobPost] = useState("");
+  const [proofPack, setProofPack] = useState<ProofPack>(EMPTY_PROOF_PACK);
+  const [draftMode, setDraftMode] = useState<DraftMode>("quick_reply");
+  const [draft, setDraft] = useState<ReplyDraft | null>(null);
   const [renderedText, setRenderedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [warnings, setWarnings] = useState<InputWarning[]>([]);
-  const [showVersion, setShowVersion] = useState(false);
-  const [clarificationSummary, setClarificationSummary] = useState("");
-  const [questions, setQuestions] = useState<ClarificationQuestion[]>([]);
-  const [clarificationAnswers, setClarificationAnswers] = useState<ClarificationAnswers>({});
-  const toolRef = useRef<HTMLDivElement>(null);
-  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-    warningTimerRef.current = setTimeout(() => {
-      setWarnings(computeWarnings(requirement, clarificationAnswers));
-    }, 600);
-    return () => {
-      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-    };
-  }, [clarificationAnswers, requirement]);
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setProofPack(normalizeProofPack(JSON.parse(saved)));
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
 
-  function handleClientTypeChange(type: ClientType) {
-    setClientType(type);
-    setDayRate("");
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(proofPack));
+  }, [hydrated, proofPack]);
+
+  function scrollToBuilder() {
+    builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function getEffectiveDayRate(): number {
-    const parsed = parseInt(dayRate, 10);
-    return Number.isFinite(parsed) && parsed > 0
-      ? parsed
-      : DEFAULT_RATES[clientType];
-  }
-
-  function resetDraftState() {
-    setProposal(null);
+  function resetOutput() {
+    setDraft(null);
     setRenderedText("");
-    setCopied(false);
+    setCopiedTarget(null);
+    setError("");
   }
 
-  function resetClarifications() {
-    setClarificationSummary("");
-    setQuestions([]);
-    setClarificationAnswers({});
+  function updateProofField(field: "specialty" | "portfolioUrl", value: string) {
+    setProofPack((current) => ({ ...current, [field]: value }));
+    resetOutput();
   }
 
-  function clearClarificationPrompt() {
-    setClarificationSummary("");
-    setQuestions([]);
+  function updateProofPoint(index: number, value: string) {
+    setProofPack((current) => {
+      const next = [...current.proofPoints];
+      next[index] = value;
+      return { ...current, proofPoints: next };
+    });
+    resetOutput();
   }
 
-  async function generate(req: string, answers: ClarificationAnswers = {}) {
+  async function handleGenerate(requestedMode: DraftMode = draftMode) {
     setLoading(true);
     setError("");
-    resetDraftState();
+    setDraft(null);
+    setRenderedText("");
+    setCopiedTarget(null);
 
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          requirement: req,
-          clientType,
-          dayRate: getEffectiveDayRate(),
-          clarificationAnswers: answers,
+          jobPost,
+          proofPack,
+          mode: requestedMode,
         }),
       });
 
@@ -112,26 +129,10 @@ export default function HomePage() {
         return;
       }
 
-      const ok = data as GenerateResponse;
-
-      if (ok.status === "needs_clarification") {
-        setProposal(null);
-        setRenderedText("");
-        setClarificationSummary(ok.summary);
-        setQuestions(ok.questions);
-        setClarificationAnswers((current) => {
-          const next = { ...current };
-          ok.questions.forEach((question) => {
-            if (!(question.id in next)) next[question.id] = "";
-          });
-          return next;
-        });
-        return;
-      }
-
-      setProposal(ok.proposal);
-      setRenderedText(ok.renderedText);
-      clearClarificationPrompt();
+      const ready = data as GenerateResponse;
+      setDraft(ready.draft);
+      setRenderedText(ready.renderedText);
+      setDraftMode(ready.draft.mode);
     } catch {
       setError("Network error. Check your connection and try again.");
     } finally {
@@ -139,235 +140,368 @@ export default function HomePage() {
     }
   }
 
-  function handleCopy() {
-    navigator.clipboard.writeText(renderedText).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  function handleJobPostChange(value: string) {
+    setJobPost(value);
+    resetOutput();
   }
 
-  function scrollToTool() {
-    toolRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  async function copyText(text: string, target: string) {
+    await navigator.clipboard.writeText(text);
+    setCopiedTarget(target);
+    window.setTimeout(() => {
+      setCopiedTarget((current) => (current === target ? null : current));
+    }, 1800);
   }
 
-  function handleRequirementChange(value: string) {
-    setRequirement(value);
-    if (questions.length > 0) resetClarifications();
-    resetDraftState();
-    setError("");
-  }
-
-  function handleClarificationChange(id: string, value: string) {
-    setClarificationAnswers((current) => ({
-      ...current,
-      [id]: value,
-    }));
-  }
-
-  const charCount = requirement.length;
+  const charCount = jobPost.length;
   const overLimit = charCount > MAX_REQUIREMENT_LENGTH;
-  const symbol = CURRENCY_SYMBOLS[clientType];
-  const isClarificationStep = questions.length > 0;
-  const allQuestionsAnswered = questions.every(
-    (question) => clarificationAnswers[question.id]?.trim().length > 0
-  );
+  const proofPackReady =
+    proofPack.specialty.trim().length > 0 &&
+    proofPack.portfolioUrl.trim().length > 0 &&
+    proofPack.proofPoints.every((point) => point.trim().length > 0);
+  const canGenerate = !loading && !overLimit && jobPost.trim().length > 0 && proofPackReady;
+  const purchaseIsExternal = purchaseUrl.startsWith("http");
 
   return (
-    <main>
-      {showVersion && <VersionPanel onClose={() => setShowVersion(false)} />}
-
+    <main className="page-shell">
       <header className="page-header">
         <Logo size="sm" />
         <div className="header-right">
+          <span className="header-chip">Upwork reply sprint</span>
           <ThemeToggle />
-          <button
-            className="version-btn"
-            onClick={() => setShowVersion(true)}
-            aria-label="View version info and changelog"
-          >
-            v1.6.0 - BETA
-          </button>
         </div>
       </header>
 
       <section className="hero">
-        <div>
-          <h1 className="hero-headline">
-            Turn messy client notes
-            <br />
-            into <em>a draft you can trust.</em>
-          </h1>
-          <p className="hero-subcopy">
-            ProposaIQ now separates sourced facts from estimates and forces
-            follow-up questions before vague briefs turn into bluff.
-          </p>
-          <button className="hero-scroll" onClick={scrollToTool}>
-            <span className="hero-scroll-line" />
-            Start drafting
-          </button>
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <p className="hero-eyebrow">For React and Next.js freelancers on Upwork</p>
+            <h1 className="hero-headline">
+              Your Upwork proposals are getting
+              <br />
+              <em>skipped in the preview.</em>
+            </h1>
+            <p className="hero-subcopy">
+              Paste a job post and get a short, job-specific proposal built to earn
+              a reply in under 30 seconds.
+            </p>
+
+            <ul className="hero-bullets">
+              <li>Pulls the real buying trigger out of a messy job post.</li>
+              <li>Matches that trigger to the one proof point that makes you look credible.</li>
+              <li>Starts with a quick reply, then expands into a fuller proposal only if you need it.</li>
+            </ul>
+
+            <div className="hero-actions">
+              <button className="primary-btn" onClick={scrollToBuilder}>
+                Rewrite my next proposal
+              </button>
+              <a
+                className="ghost-link"
+                href={purchaseUrl}
+                {...(purchaseIsExternal ? { target: "_blank", rel: "noreferrer" } : {})}
+              >
+                Buy Reply Sprint Pack
+              </a>
+            </div>
+          </div>
+
+          <div className="hero-stack">
+            <article className="preview-card">
+              <p className="card-kicker">Before / After</p>
+              <div className="preview-block">
+                <p className="preview-label">Skipped</p>
+                <p className="preview-line preview-line--bad">
+                  I am interested in your project and believe I can do this for you.
+                </p>
+              </div>
+              <div className="preview-block">
+                <p className="preview-label">Reply-worthy</p>
+                <p className="preview-line preview-line--good">
+                  Your first risk is not the dashboard build. It is getting clean
+                  CRM and billing data into one workflow without slowing the sales team down.
+                </p>
+              </div>
+            </article>
+
+            <article className="offer-card">
+              <p className="card-kicker">First paid offer</p>
+              <h2 className="offer-title">Reply Sprint Pack</h2>
+              <p className="offer-price">$29 one-time</p>
+              <ul className="offer-list">
+                <li>20 proposal generations</li>
+                <li>1 saved proof pack</li>
+                <li>3 ranked hook variants on every job</li>
+              </ul>
+              <a
+                className="offer-link"
+                href={purchaseUrl}
+                {...(purchaseIsExternal ? { target: "_blank", rel: "noreferrer" } : {})}
+              >
+                Buy Reply Sprint Pack
+              </a>
+            </article>
+          </div>
         </div>
       </section>
 
-      <div className="tool-root" ref={toolRef}>
-        <aside className="input-panel">
-          <div>
-            <label className="input-label" htmlFor="requirement">
-              Client brief
-            </label>
-            <textarea
-              id="requirement"
-              className="req-textarea"
-              value={requirement}
-              onChange={(e) => handleRequirementChange(e.target.value)}
-              placeholder={
-                "Describe what the client asked for.\nPaste an email, a Notion doc, or a Slack thread."
-              }
-              rows={14}
-            />
-            {error && <p className="error-msg">{error}</p>}
+      <section className="builder-section" ref={builderRef}>
+        <div className="section-heading">
+          <p className="section-kicker">Builder</p>
+          <h2 className="section-title">Paste the job. Match the proof. Send the bid.</h2>
+          <p className="section-copy">
+            The proof pack stays in this browser, so repeat use drops to one field and one button.
+          </p>
+        </div>
 
-            {warnings.length > 0 && !loading && !isClarificationStep && (
-              <ul className="warnings-list" aria-label="Input quality signals">
-                {warnings.map((w) => (
-                  <li key={w.id} className={`warning-badge warning-badge--${w.severity}`}>
-                    <span className="warning-icon" aria-hidden="true">
-                      {w.severity === "conflict" ? "!" : w.severity === "caution" ? "^" : "i"}
-                    </span>
-                    <span>
-                      <span className="warning-label">{w.label}</span>
-                      <span className="warning-detail">{w.detail}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="pricing-context">
-              <div className="pricing-context-row">
-                <span className="pricing-context-label">Client</span>
-                <div className="client-type-toggle" role="group" aria-label="Client type">
-                  {(["international", "domestic"] as ClientType[]).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`client-type-btn${clientType === type ? " client-type-btn--active" : ""}`}
-                      onClick={() => handleClientTypeChange(type)}
-                      aria-pressed={clientType === type}
-                    >
-                      {type === "domestic" ? "Domestic (India)" : "International"}
-                    </button>
-                  ))}
-                </div>
+        <div className="builder-grid">
+          <form
+            className="form-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (canGenerate) void handleGenerate();
+            }}
+          >
+            <div className="field-group">
+              <p className="field-label">Output mode</p>
+              <div className="mode-toggle" role="group" aria-label="Output mode">
+                <button
+                  type="button"
+                  className={`mode-btn${draftMode === "quick_reply" ? " mode-btn--active" : ""}`}
+                  onClick={() => {
+                    setDraftMode("quick_reply");
+                    resetOutput();
+                  }}
+                >
+                  Quick reply
+                </button>
+                <button
+                  type="button"
+                  className={`mode-btn${draftMode === "full_proposal" ? " mode-btn--active" : ""}`}
+                  onClick={() => {
+                    setDraftMode("full_proposal");
+                    resetOutput();
+                  }}
+                >
+                  Full proposal
+                </button>
               </div>
-
-              <div className="pricing-context-row">
-                <label className="pricing-context-label" htmlFor="dayRate">
-                  Day rate
-                </label>
-                <div className="day-rate-input-wrap">
-                  <span className="day-rate-currency" aria-hidden="true">
-                    {symbol}
-                  </span>
-                  <input
-                    id="dayRate"
-                    className="day-rate-input"
-                    type="number"
-                    min={1}
-                    step={clientType === "domestic" ? 500 : 10}
-                    value={dayRate}
-                    onChange={(e) => setDayRate(e.target.value)}
-                    placeholder={String(DEFAULT_RATES[clientType])}
-                    aria-label={`Day rate in ${CURRENCY_LABELS[clientType]}`}
-                  />
-                  <span className="day-rate-suffix">{CURRENCY_LABELS[clientType]} / day</span>
-                </div>
-              </div>
-            </div>
-
-            {isClarificationStep && (
-              <div className="clarification-panel">
-                <p className="clarification-title">Clarify before drafting</p>
-                <p className="clarification-summary">{clarificationSummary}</p>
-                <div className="clarification-list">
-                  {questions.map((question) => (
-                    <label key={question.id} className="clarification-item">
-                      <span className="clarification-label">{question.label}</span>
-                      <span className="clarification-question">{question.question}</span>
-                      <textarea
-                        className="clarification-input"
-                        rows={2}
-                        value={clarificationAnswers[question.id] ?? ""}
-                        onChange={(e) =>
-                          handleClarificationChange(question.id, e.target.value)
-                        }
-                        placeholder={question.placeholder}
-                      />
-                      <span className="clarification-reason">{question.reason}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="input-footer">
-            <span className="char-count">
-              {charCount.toLocaleString()} / {MAX_REQUIREMENT_LENGTH.toLocaleString()}
-            </span>
-            <button
-              className="generate-btn"
-              onClick={() =>
-                generate(
-                  requirement,
-                  isClarificationStep ? clarificationAnswers : {}
-                )
-              }
-              disabled={
-                loading ||
-                !requirement.trim() ||
-                overLimit ||
-                (isClarificationStep && !allQuestionsAnswered)
-              }
-            >
-              {loading
-                ? "Working..."
-                : isClarificationStep
-                  ? "Generate trust-first draft"
-                  : "Review brief"}
-            </button>
-          </div>
-
-          {loading && (
-            <div className="status-line">
-              <span className="status-dot" />
-              Reviewing the brief, checking missing details, and grounding facts
-            </div>
-          )}
-        </aside>
-
-        <div className="output-panel">
-          {proposal ? (
-            <ProposalView
-              proposal={proposal}
-              loading={loading}
-              onRegenerate={() => generate(requirement, clarificationAnswers)}
-              onCopy={handleCopy}
-              copied={copied}
-            />
-          ) : (
-            <div className="empty-state">
-              <p className="empty-label">Output</p>
-              <p className="empty-hint">
-                {loading
-                  ? "Building your trust-first draft..."
-                  : isClarificationStep
-                    ? "Answer the missing items on the left to unlock the draft."
-                    : "Your first draft will appear here."}
+              <p className="field-note">
+                Quick reply is default. Full proposal keeps the same pain, proof,
+                attack line, and question, but gives them more room.
               </p>
             </div>
-          )}
+
+            <div className="field-group">
+              <label className="field-label" htmlFor="jobPost">
+                Upwork job post
+              </label>
+              <textarea
+                id="jobPost"
+                className="job-input"
+                value={jobPost}
+                onChange={(event) => handleJobPostChange(event.target.value)}
+                placeholder={
+                  "Paste the full Upwork post here.\n\nExample: Looking for a React / Next.js freelancer to rebuild our B2B SaaS onboarding dashboard and clean up a flaky Stripe + HubSpot workflow."
+                }
+                rows={14}
+              />
+              <div className="hint-row">
+                <span className="field-note">Paste the client post, not your summary.</span>
+                <span className="char-count">
+                  {charCount.toLocaleString()} / {MAX_REQUIREMENT_LENGTH.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="proof-pack-head">
+              <div>
+                <p className="field-label">Proof pack</p>
+                <p className="field-note">Saved locally and reused on every bid.</p>
+              </div>
+              <span className="save-badge">{hydrated ? "Saved locally" : "Loading..."}</span>
+            </div>
+
+            <div className="field-group">
+              <label className="field-label" htmlFor="specialty">
+                Specialty
+              </label>
+              <input
+                id="specialty"
+                className="text-input"
+                type="text"
+                value={proofPack.specialty}
+                onChange={(event) => updateProofField("specialty", event.target.value)}
+                placeholder="React / Next.js SaaS builds for internal tools and dashboards"
+              />
+            </div>
+
+            <div className="proof-grid">
+              {proofPack.proofPoints.map((point, index) => (
+                <div key={index} className="field-group">
+                  <label className="field-label" htmlFor={`proof-${index}`}>
+                    Proof point {index + 1}
+                  </label>
+                  <textarea
+                    id={`proof-${index}`}
+                    className="proof-input"
+                    value={point}
+                    onChange={(event) => updateProofPoint(index, event.target.value)}
+                    rows={3}
+                    placeholder={
+                      index === 0
+                        ? "Built a Stripe + HubSpot onboarding flow that cut manual ops work for a SaaS team."
+                        : index === 1
+                          ? "Shipped a Next.js admin dashboard with role-based workflows and audit history."
+                          : "Cleaned up a flaky React data-sync flow that was blocking sales and support teams."
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="field-group">
+              <label className="field-label" htmlFor="portfolioUrl">
+                Portfolio link
+              </label>
+              <input
+                id="portfolioUrl"
+                className="text-input"
+                type="url"
+                value={proofPack.portfolioUrl}
+                onChange={(event) => updateProofField("portfolioUrl", event.target.value)}
+                placeholder="https://yourportfolio.com/case-study"
+              />
+            </div>
+
+            {error && <p className="error-banner">{error}</p>}
+
+            <div className="form-actions">
+              <button className="primary-btn" type="submit" disabled={!canGenerate}>
+                {loading
+                  ? draftMode === "full_proposal"
+                    ? "Building full proposal..."
+                    : "Scoring hooks..."
+                  : draftMode === "full_proposal"
+                    ? "Build full proposal"
+                    : "Rewrite my next proposal"}
+              </button>
+              <p className="action-note">
+                {proofPackReady
+                  ? "Ready to generate."
+                  : "Complete the proof pack once, then reuse it on every bid."}
+              </p>
+            </div>
+
+            {loading && (
+              <div className="loading-badge">
+                {draftMode === "full_proposal"
+                  ? "Keeping the same pain, proof, attack line, and question while expanding the draft."
+                  : "Pulling the buyer fear, matching your best proof, and tightening the opener."}
+              </div>
+            )}
+          </form>
+
+          <aside className="result-card">
+            <div className="result-header">
+              <div>
+                <p className="card-kicker">Output</p>
+                <h3 className="result-title">
+                  {draft?.mode === "full_proposal"
+                    ? "Paste-ready full proposal"
+                    : "Paste-ready quick reply"}
+                </h3>
+              </div>
+              {draft && (
+                <div className="result-actions">
+                  {draft.mode === "quick_reply" && (
+                    <button
+                      className="secondary-btn"
+                      type="button"
+                      onClick={() => void handleGenerate("full_proposal")}
+                      disabled={loading}
+                    >
+                      Expand to full proposal
+                    </button>
+                  )}
+                  <button
+                    className="copy-btn"
+                    type="button"
+                    onClick={() => copyText(renderedText || draft.finalProposal, "proposal")}
+                  >
+                    {copiedTarget === "proposal" ? "Copied" : "Copy proposal"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {draft ? (
+              <div className="result-body">
+                <div className="result-block">
+                  <p className="mini-label">Matched proof</p>
+                  <p className="matched-proof">{draft.matchedProof}</p>
+                </div>
+
+                <div className="result-block">
+                  <p className="mini-label">Hook options</p>
+                  <div className="hook-list">
+                    {draft.hookOptions.map((option) => (
+                      <div key={option.rank} className="hook-card">
+                        <div className="hook-top">
+                          <span className="hook-rank">#{option.rank}</span>
+                          <button
+                            className="hook-copy-btn"
+                            type="button"
+                            onClick={() => copyText(option.hook, `hook-${option.rank}`)}
+                          >
+                            {copiedTarget === `hook-${option.rank}` ? "Copied" : "Copy hook"}
+                          </button>
+                        </div>
+                        <p className="hook-text">{option.hook}</p>
+                        <p className="hook-rationale">{option.rationale}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="result-block">
+                  <p className="mini-label">Final proposal</p>
+                  <div className="proposal-output">{draft.finalProposal}</div>
+                </div>
+
+                <p className="result-footnote">
+                  {draft.mode === "full_proposal"
+                    ? "Longer does not mean generic. This still needs to hit pain, proof, attack line, and one narrow question."
+                    : "Paste this into Upwork, tweak one noun if needed, and send before the job fills up."}
+                </p>
+              </div>
+            ) : (
+              <div className="result-empty">
+                <p className="result-empty-title">Your opener rewrite will show up here.</p>
+                <p className="result-empty-copy">
+                  You will get three ranked hooks, one matched proof point, and either a quick reply or a fuller proposal built from the same core argument.
+                </p>
+
+                <div className="sample-card">
+                  <p className="mini-label">What strong output looks like</p>
+                  <p className="sample-line">
+                    Your first risk is not shipping the dashboard. It is giving your sales team another slow handoff between HubSpot and Stripe.
+                  </p>
+                  <p className="sample-line">
+                    I recently rebuilt that exact handoff for a SaaS workflow and cut the manual cleanup that was blocking onboarding.
+                  </p>
+                  <p className="sample-line">
+                    I would start by locking the data states, then rebuild the UI around the steps your ops team actually uses every day.
+                  </p>
+                  <p className="sample-line">
+                    Do you already know where the sync is breaking most often: customer creation, subscription status, or internal task routing?
+                  </p>
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

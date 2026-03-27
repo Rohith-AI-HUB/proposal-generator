@@ -34,6 +34,7 @@ export interface RequestLog {
   repairUsed:            boolean;
   failureClass:          ErrorCode | "RATE_LIMITED" | null;
   status:                number;
+  hookCount?:            number;
   clarificationIssued?:  boolean;
   clarificationCount?:   number;
   sourceCount?:          number;

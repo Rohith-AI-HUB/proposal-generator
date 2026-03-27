@@ -7,8 +7,8 @@ export const MAX_REQUIREMENT_LENGTH = 8_000;
 // ─── Model config ─────────────────────────────────────────────────────────────
 export const MODEL_CONFIG = {
   model: "llama-3.3-70b-versatile",
-  maxTokens: 3000,
-  temperature: 0.3, // Lower = more deterministic JSON structure
+  maxTokens: 1200,
+  temperature: 0.35, // Tight output, still enough variation for hooks
 } as const;
 
 export const RESEARCH_MODEL_CONFIG = {
@@ -89,11 +89,11 @@ export const RATE_LIMIT_CONFIG = {
 export const ERROR_MESSAGES = {
   CONFIG_ERROR:     "Server is missing GROQ_API_KEY.",
   INVALID_BODY:     "Invalid request body.",
-  INPUT_TOO_SHORT:  "Requirement too short. Add more detail.",
-  INPUT_TOO_LONG:   `Requirement too long. Keep it under ${MAX_REQUIREMENT_LENGTH.toLocaleString()} characters.`,
+  INPUT_TOO_SHORT:  "Job post too short. Paste the full Upwork job post.",
+  INPUT_TOO_LONG:   `Job post too long. Keep it under ${MAX_REQUIREMENT_LENGTH.toLocaleString()} characters.`,
   RATE_LIMITED:     `Too many requests. Try again in ${RATE_LIMIT_CONFIG.windowMinutes} minutes.`,
   MODEL_ERROR:      "Model call failed. Try again.",
   PARSE_ERROR:      "Model returned malformed JSON. Try regenerating.",
-  VALIDATION_ERROR: "Model returned an incomplete proposal. Try regenerating.",
-  REPAIR_FAILED:    "Model could not produce a valid proposal after repair. Try regenerating.",
+  VALIDATION_ERROR: "Model returned an invalid reply draft. Try regenerating.",
+  REPAIR_FAILED:    "Model could not produce a valid reply draft after repair. Try regenerating.",
 } as const;

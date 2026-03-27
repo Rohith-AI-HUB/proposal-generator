@@ -3,9 +3,9 @@ import "./globals.css";
 
 const SITE_URL = "https://proposal-generator-blond.vercel.app";
 const SITE_NAME = "ProposaIQ";
-const SITE_TITLE = "ProposaIQ | Trust-first proposal drafts for freelance developers";
+const SITE_TITLE = "ProposaIQ | Upwork proposal hooks that earn more replies";
 const SITE_DESCRIPTION =
-  "Paste a messy client brief and get a trust-first proposal draft with cited facts, assumptions, client costs, and clarification questions before you bluff.";
+  "Paste an Upwork job post and get a short, job-specific proposal plus stronger opening hooks before you spend more Connects.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
-    "proposal generator for freelancers",
-    "freelance proposal software",
-    "client proposal drafting tool",
-    "software project proposal generator",
-    "proposal writer for developers",
+    "upwork proposal generator",
+    "upwork proposal opener",
+    "freelance reply rate tool",
+    "proposal hooks for freelancers",
+    "nextjs freelancer upwork proposals",
   ],
   alternates: {
     canonical: "/",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "ProposaIQ trust-first proposal drafting preview",
+        alt: "ProposaIQ Upwork reply-rate preview",
       },
     ],
   },

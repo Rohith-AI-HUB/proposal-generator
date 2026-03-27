@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "ProposaIQ trust-first proposal drafting preview";
+export const alt = "ProposaIQ Upwork reply-rate preview";
 export const size = {
   width: 1200,
   height: 630,
@@ -16,8 +16,8 @@ export default function OpengraphImage() {
           width: "100%",
           height: "100%",
           background:
-            "radial-gradient(circle at top left, #f3e3c7 0, rgba(243,227,199,0.12) 28%, transparent 45%), linear-gradient(135deg, #19140f 0%, #201913 55%, #2b2218 100%)",
-          color: "#ede7db",
+            "radial-gradient(circle at top left, rgba(216,164,94,0.28), transparent 28%), linear-gradient(135deg, #15110f 0%, #1c1613 54%, #251d17 100%)",
+          color: "#f3ebde",
           padding: "56px 64px",
           fontFamily: "Georgia, serif",
         }}
@@ -29,19 +29,19 @@ export default function OpengraphImage() {
             justifyContent: "space-between",
             width: "100%",
             height: "100%",
-            border: "1px solid rgba(196, 154, 94, 0.35)",
+            border: "1px solid rgba(216,164,94,0.3)",
             borderRadius: 28,
-            padding: "44px 48px",
-            background: "rgba(20, 16, 12, 0.7)",
+            padding: "42px 48px",
+            background: "rgba(26, 21, 18, 0.82)",
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 16,
+              gap: 14,
               fontFamily: "Arial, sans-serif",
-              color: "#c49a5e",
+              color: "#d8a45e",
               fontSize: 28,
               letterSpacing: 4,
               textTransform: "uppercase",
@@ -52,24 +52,24 @@ export default function OpengraphImage() {
                 width: 18,
                 height: 18,
                 borderRadius: 999,
-                background: "#c49a5e",
-                boxShadow: "0 0 32px rgba(196, 154, 94, 0.5)",
+                background: "#d8a45e",
+                boxShadow: "0 0 30px rgba(216,164,94,0.45)",
               }}
             />
-            Trust-first proposal drafts
+            Upwork reply sprint
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div
               style={{
                 display: "flex",
                 fontSize: 76,
-                lineHeight: 1.03,
+                lineHeight: 1.02,
                 letterSpacing: -2.8,
-                maxWidth: 920,
+                maxWidth: 930,
               }}
             >
-              Turn messy client briefs into drafts you can defend.
+              Your proposal is losing in the preview before the client even clicks.
             </div>
 
             <div
@@ -77,21 +77,21 @@ export default function OpengraphImage() {
                 display: "flex",
                 fontFamily: "Arial, sans-serif",
                 fontSize: 30,
-                lineHeight: 1.4,
-                color: "#cfc4b5",
+                lineHeight: 1.35,
+                color: "#d0c3b2",
                 maxWidth: 900,
               }}
             >
-              ProposaIQ asks follow-up questions first, separates cited facts from
-              estimates, and makes uncertainty explicit before you send.
+              Paste the job post. Get three sharper hooks, one matched proof
+              point, and a short proposal built to earn a reply.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 18, fontFamily: "Arial, sans-serif" }}>
             {[
-              "Clarify vague briefs",
-              "Cited facts and costs",
-              "Explicit assumptions",
+              "3 ranked hooks",
+              "1 matched proof",
+              "Short paste-ready bid",
             ].map((label) => (
               <div
                 key={label}
@@ -100,10 +100,10 @@ export default function OpengraphImage() {
                   alignItems: "center",
                   padding: "14px 22px",
                   borderRadius: 999,
-                  border: "1px solid rgba(196, 154, 94, 0.28)",
-                  background: "rgba(196, 154, 94, 0.08)",
+                  border: "1px solid rgba(216,164,94,0.24)",
+                  background: "rgba(216,164,94,0.08)",
                   fontSize: 24,
-                  color: "#f3ebdf",
+                  color: "#f3ebde",
                 }}
               >
                 {label}
