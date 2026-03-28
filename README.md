@@ -1,12 +1,12 @@
 # ProposaIQ
 
-> Upwork reply sprint for React and Next.js freelancers.
+> Upwork reply sprint for solo React and Next.js freelancers.
 
-ProposaIQ no longer generates long proposal reports. It takes an Upwork job post plus a saved proof pack and returns:
+ProposaIQ is not a generic proposal generator. It takes an Upwork job post plus a lightweight proof pack and returns:
 
 - `3` ranked opening hooks
 - `1` matched proof point
-- `1` quick reply or `1` fuller Upwork proposal built from the same core argument
+- `1` quick reply or `1` fuller proposal built from the same argument
 
 The product is deliberately narrow:
 
@@ -21,12 +21,9 @@ The product is deliberately narrow:
 ## Core Flow
 
 1. Paste the full Upwork job post.
-2. Reuse a saved proof pack:
-   - specialty
-   - three proof bullets
-   - one portfolio link
-3. Generate a quick reply or a full proposal.
-4. Optionally expand a quick reply into a fuller proposal.
+2. Add one proof point.
+3. Optionally add specialty context and a portfolio URL.
+4. Generate a quick reply or a full proposal.
 5. Copy the final proposal into Upwork and send.
 
 ## API
@@ -37,12 +34,18 @@ POST /api/generate
   "jobPost": "string",
   "mode": "quick_reply" | "full_proposal",
   "proofPack": {
-    "specialty": "string",
-    "proofPoints": ["string", "string", "string"],
-    "portfolioUrl": "string"
+    "specialty": "string (optional)",
+    "proofPoints": ["string"],
+    "portfolioUrl": "string (optional)"
   }
 }
 ```
+
+Rules:
+
+- `proofPoints` must contain at least `1` non-empty item and at most `3`
+- `specialty` is optional
+- `portfolioUrl` is optional
 
 Response:
 
@@ -65,6 +68,21 @@ Response:
 
 `renderedText` is the same paste-ready proposal text used by the copy action.
 
+## Analytics
+
+The app logs a minimal funnel through `POST /api/track` using a browser visitor id plus a session id. Current events:
+
+- `page_view`
+- `return_visit`
+- `builder_started`
+- `generate_success`
+- `expand_to_full`
+- `copy_proposal`
+- `copy_hook`
+- `purchase_click`
+
+The route logs JSON to stdout so you can inspect sessions without adding a third-party analytics SDK.
+
 ## Setup
 
 ```bash
@@ -77,6 +95,7 @@ Create `.env.local`:
 
 ```bash
 GROQ_API_KEY=gsk_...
+NEXT_PUBLIC_REPLY_SPRINT_CHECKOUT_URL=https://your-checkout-link.example
 ```
 
 Run locally:
@@ -85,13 +104,7 @@ Run locally:
 npm run dev
 ```
 
-Optional purchase CTA override:
-
-```bash
-NEXT_PUBLIC_REPLY_SPRINT_URL=https://your-payment-link.example
-```
-
-Without that env var, the buy button falls back to a `mailto:` link.
+If `NEXT_PUBLIC_REPLY_SPRINT_CHECKOUT_URL` is missing, the paid CTA stays disabled. That is intentional. Do not ship paid traffic to a mailto link and pretend it is checkout.
 
 ## Stack
 
@@ -100,8 +113,17 @@ Without that env var, the buy button falls back to a `mailto:` link.
 - Tailwind CSS 3
 - Groq API with `llama-3.3-70b-versatile`
 
-## Verification
+## Validation
 
-- `npm run test:trust`
+- `npm run test:reply`
 - `npm run build`
 - `npm run lint`
+
+## Kill Criteria
+
+Do not keep adding features blindly. Stop expanding if a `14`-day direct outreach sprint fails to produce at least:
+
+- `10` repeat users
+- `3` people willing to pay
+
+If that signal does not show up, the product is not proving enough value yet.

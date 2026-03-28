@@ -58,7 +58,7 @@ function parseProofPack(value: unknown): ProofPack {
         .slice(0, 3)
     : [];
 
-  if (!specialty || !portfolioUrl || proofPoints.length !== 3) {
+  if (proofPoints.length < 1) {
     throw new Error("invalid proof pack");
   }
 

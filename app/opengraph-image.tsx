@@ -82,8 +82,8 @@ export default function OpengraphImage() {
                 maxWidth: 900,
               }}
             >
-              Paste the job post. Get three sharper hooks, one matched proof
-              point, and a short proposal built to earn a reply.
+              Paste the job post, add one proof point, and get three sharper hooks
+              plus a reply-focused draft built to earn a response.
             </div>
           </div>
 
@@ -91,7 +91,7 @@ export default function OpengraphImage() {
             {[
               "3 ranked hooks",
               "1 matched proof",
-              "Short paste-ready bid",
+              "Paste-ready reply",
             ].map((label) => (
               <div
                 key={label}

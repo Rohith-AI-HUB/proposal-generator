@@ -1,13 +1,5 @@
 import type { DraftMode, ProofPack } from "@/lib/domain/proposal/schema";
 
-// Legacy export kept so older unused modules still type-check.
-export interface PricingContext {
-  dayRate: number;
-  clientType: "domestic" | "international";
-  currency: "INR" | "USD";
-  currencySymbol: string;
-}
-
 function rolePreamble(): string {
   return `You rewrite Upwork proposals for solo React and Next.js freelancers.
 Your only job is to improve the chance of getting a client reply.
@@ -82,8 +74,23 @@ Do not mention pricing, timelines, assumptions, sources, confidence, or delivera
 Do not bluff experience that is not supported by the proof pack.`;
 }
 
-export function buildSystemPrompt(_pricingCtx?: PricingContext): string {
-  void _pricingCtx;
+function formatProofPack(proofPack: ProofPack) {
+  const proofPoints = proofPack.proofPoints
+    .map((point) => point.trim())
+    .filter((point) => point.length > 0)
+    .slice(0, 3)
+    .map((point, index) => `${index + 1}. ${point}`)
+    .join("\n");
+
+  return {
+    specialty:
+      proofPack.specialty.trim() || "React / Next.js freelancer (specialty not provided)",
+    proofPoints,
+    portfolioUrl: proofPack.portfolioUrl.trim() || "not provided",
+  };
+}
+
+export function buildSystemPrompt(): string {
   return [rolePreamble(), outputContract(), writingRules()].join("\n\n");
 }
 
@@ -92,15 +99,13 @@ export function buildUserMessage(
   proofPack: ProofPack,
   mode: DraftMode
 ): string {
-  const proofPoints = proofPack.proofPoints
-    .map((point, index) => `${index + 1}. ${point}`)
-    .join("\n");
+  const profile = formatProofPack(proofPack);
 
   return `Freelancer profile:
-- Specialty: ${proofPack.specialty}
+- Specialty: ${profile.specialty}
 - Proof points:
-${proofPoints}
-- Portfolio URL: ${proofPack.portfolioUrl}
+${profile.proofPoints}
+- Portfolio URL: ${profile.portfolioUrl}
 
 Upwork job post:
 ${jobPost}

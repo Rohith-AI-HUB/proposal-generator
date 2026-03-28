@@ -3,9 +3,9 @@ import "./globals.css";
 
 const SITE_URL = "https://proposal-generator-blond.vercel.app";
 const SITE_NAME = "ProposaIQ";
-const SITE_TITLE = "ProposaIQ | Upwork proposal hooks that earn more replies";
+const SITE_TITLE = "ProposaIQ | Upwork reply drafts that earn more replies";
 const SITE_DESCRIPTION =
-  "Paste an Upwork job post and get a short, job-specific proposal plus stronger opening hooks before you spend more Connects.";
+  "Paste an Upwork job post, add one proof point, and get sharper hooks plus a paste-ready reply before you spend more Connects.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   keywords: [
     "upwork proposal generator",
     "upwork proposal opener",
+    "upwork reply tool",
     "freelance reply rate tool",
-    "proposal hooks for freelancers",
-    "nextjs freelancer upwork proposals",
+    "react nextjs upwork proposals",
   ],
   alternates: {
     canonical: "/",
@@ -49,7 +49,6 @@ export const metadata: Metadata = {
   verification: { google: "AASp5KSs1zzOm_fnICeF92SpkuIvG83Wkss3sGCc1D0" },
 };
 
-// Runs synchronously before any CSS or JS loads - prevents flash of wrong theme.
 const themeScript = `
   (function() {
     try {
@@ -65,7 +64,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
-        {/* Anti-flash: read theme preference before first paint */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

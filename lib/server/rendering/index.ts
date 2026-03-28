@@ -1,1 +1,1 @@
-export { renderProposalText, renderReplyDraftText } from "./text";
+export { renderReplyDraftText } from "./text";

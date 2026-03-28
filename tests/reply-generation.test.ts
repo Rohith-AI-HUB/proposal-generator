@@ -58,7 +58,7 @@ function createDeps(
   };
 }
 
-test("generateProposal returns a quick reply draft and passes proof-pack context to the prompt", async () => {
+test("generateProposal works with one proof point and no portfolio URL", async () => {
   let capturedUserMessage = "";
 
   const result = await generateProposal(
@@ -67,13 +67,11 @@ test("generateProposal returns a quick reply draft and passes proof-pack context
         "Need a React / Next.js freelancer to fix a flaky Stripe and HubSpot onboarding dashboard for our SaaS team.",
       mode: "quick_reply",
       proofPack: {
-        specialty: "React / Next.js SaaS builds",
+        specialty: "",
         proofPoints: [
           "Built a Next.js onboarding dashboard tied to Stripe and HubSpot for a SaaS ops team.",
-          "Shipped a role-based React admin panel for internal support workflows.",
-          "Cleaned up a brittle billing sync that was blocking account activation.",
         ],
-        portfolioUrl: "https://example.com/case-study",
+        portfolioUrl: "",
       },
     },
     createDeps((_attempt, userMessage) => {
@@ -86,8 +84,8 @@ test("generateProposal returns a quick reply draft and passes proof-pack context
   assert.equal(result.draft.hookOptions.length, 3);
   assert.equal(result.renderedText, VALID_QUICK_DRAFT.finalProposal);
   assert.equal(result.meta.hookCount, 3);
-  assert.match(capturedUserMessage, /React \/ Next\.js SaaS builds/);
-  assert.match(capturedUserMessage, /https:\/\/example\.com\/case-study/);
+  assert.match(capturedUserMessage, /specialty not provided/);
+  assert.match(capturedUserMessage, /Portfolio URL: not provided/);
   assert.match(capturedUserMessage, /Requested mode: quick_reply/);
 });
 
@@ -104,7 +102,7 @@ test("generateProposal retries once when the first model response is invalid", a
           "Fixed a billing sync issue that was blocking activations.",
           "Shipped internal ops tooling in Next.js.",
         ],
-        portfolioUrl: "https://example.com/work",
+        portfolioUrl: "",
       },
     },
     createDeps((attempt) =>

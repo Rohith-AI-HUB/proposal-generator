@@ -54,7 +54,7 @@ test("ReplyDraftSchema accepts a constrained full proposal with short paragraphs
       },
     ],
     finalProposal:
-      "Your issue is not the dashboard redesign. It is Stripe and HubSpot leaving customer status in conflicting states, which forces manual checks and makes the admin view hard to trust.\n\nI fixed that exact kind of SaaS onboarding mess in a React dashboard by cleaning up a broken Stripe-to-HubSpot handoff and rebuilding the flow around the real state transitions instead of patching screens.\n\nI would start by tracing where the state drift happens, then rebuild the admin workflow so sales and ops are working from one reliable state. Which is breaking most often right now: subscription sync, HubSpot updates, or the admin state logic?",
+      "Your issue is not the dashboard redesign. It is Stripe and HubSpot leaving customer status in conflicting states, which forces manual checks and makes the admin view hard to rely on.\n\nI fixed that exact kind of SaaS onboarding mess in a React dashboard by cleaning up a broken Stripe-to-HubSpot handoff and rebuilding the flow around the real state transitions instead of patching screens.\n\nI would start by tracing where the state drift happens, then rebuild the admin workflow so sales and ops are working from one reliable state. Which is breaking most often right now: subscription sync, HubSpot updates, or the admin state logic?",
   });
 
   assert.equal(result.success, true);

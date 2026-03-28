@@ -1,6 +1,6 @@
 {
   "name": "proposal-generator",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,9 +9,7 @@
     "lint": "eslint .",
     "test": "tsx --test tests/**/*.test.ts",
     "test:reply": "tsx --test tests/**/*.test.ts",
-    "test:trust": "tsx --test tests/**/*.test.ts",
-    "eval:reply": "tsx scripts/evaluate-trust.ts",
-    "eval:trust": "tsx scripts/evaluate-trust.ts"
+    "eval:reply": "tsx scripts/evaluate-reply.ts"
   },
   "dependencies": {
     "next": "16.1.7",

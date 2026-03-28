@@ -277,6 +277,12 @@ button {
   cursor: not-allowed;
 }
 
+.ghost-link:disabled,
+.offer-link:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
 .secondary-btn {
   border: 1px solid var(--border);
   padding: 12px 16px;

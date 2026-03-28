@@ -13,7 +13,7 @@ const DEFAULT_PROOF_PACK = {
     "Shipped a role-based React admin panel for internal support workflows.",
     "Cleaned up a brittle billing sync that was blocking account activation.",
   ],
-  portfolioUrl: "https://example.com/case-study",
+  portfolioUrl: "",
 };
 
 const FIXTURES: ReplySprintFixture[] = [
